@@ -1,0 +1,20 @@
+#ignore the entirety of the module extractor except for the python code
+module_extractor/*
+!module_extractor/extractor.py
+
+#ignore the original papers
+2303.14307v3.pdf
+Audio-Visual_Speech_Recognition_based_on_Cross-Lingual_Transfer_Learning.pdf
+
+#ignore the datasets
+datasets/
+noise_datasets/
+
+#ignore the original pipelines
+auto_avsr_original_do_not_touch/
+
+#ignore the trained checkpoints
+auto_avsr/exp/
+
+#ignore the original checkpoints
+original_checkpoints/

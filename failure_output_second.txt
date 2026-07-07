@@ -1,0 +1,40 @@
+W0629 10:57:59.009000 14364 Lib\site-packages\torch\utils\flop_counter.py:29] triton not found; flop counting will not work for triton kernels
+C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\connectors\logger_connector\logger_connector.py:76: Starting from v1.9.0, `tensorboardX` has been removed as a dependency of the `pytorch_lightning` package, due to potential conflicts with other packages in the ML ecosystem. For this reason, `logger=True` will use `CSVLogger` as the default logger, unless the `tensorboard` or `tensorboardX` packages are found. Please `pip install lightning[extra]` or one of them to enable TensorBoard support by default
+C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\callbacks\model_checkpoint.py:881: Checkpoint directory C:\Users\Hiroyuki\gr_avsr\auto_avsr\exp\rohan_avsr exists and is not empty.
+Error executing job with overrides: ['+experiment=rohan_avsr', 'exp_dir=exp', 'exp_name=rohan_avsr', 'pretrained_visual_frontend_path=../module_extractor/frontends/frontend_visual_trlrs3.pth', 'pretrained_audio_frontend_path=../module_extractor/frontends/frontend_audio_trlrs3.pth', '+data.num_workers=4', '+data.pin_memory=True', 'data.max_frames=800', 'data.max_frames_val=800', 'ckpt_path=exp/rohan_avsr/last-v2.ckpt']
+Traceback (most recent call last):
+  File "C:\Users\Hiroyuki\gr_avsr\auto_avsr\train.py", line 50, in main
+    trainer.fit(model=modelmodule, datamodule=datamodule, ckpt_path=cfg.ckpt_path)
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\trainer.py", line 584, in fit
+    call._call_and_handle_interrupt(
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\call.py", line 49, in _call_and_handle_interrupt
+    return trainer_fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\trainer.py", line 630, in _fit_impl
+    self._run(model, ckpt_path=ckpt_path, weights_only=weights_only)
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\trainer.py", line 1046, in _run
+    self._checkpoint_connector._restore_modules_and_callbacks(ckpt_path, weights_only)
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\connectors\checkpoint_connector.py", line 410, in _restore_modules_and_callbacks
+    self.resume_start(checkpoint_path, weights_only=weights_only)
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\connectors\checkpoint_connector.py", line 83, in resume_start
+    loaded_checkpoint = self.trainer.strategy.load_checkpoint(checkpoint_path, weights_only=weights_only)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\strategies\strategy.py", line 368, in load_checkpoint
+    return self.checkpoint_io.load_checkpoint(checkpoint_path, weights_only=weights_only)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\lightning_fabric\plugins\io\torch_io.py", line 91, in load_checkpoint
+    return pl_load(path, map_location=map_location, weights_only=weights_only)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\lightning_fabric\utilities\cloud_io.py", line 73, in _load
+    return torch.load(
+           ^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\torch\serialization.py", line 1578, in load
+    raise pickle.UnpicklingError(_get_wo_message(str(e))) from None
+_pickle.UnpicklingError: Weights only load failed. This file can still be loaded, to do so you have two options, do those steps only if you trust the source of the checkpoint.
+        (1) In PyTorch 2.6, we changed the default value of the `weights_only` argument in `torch.load` from `False` to `True`. Re-running `torch.load` with `weights_only` set to `False` will likely succeed, but it can result in arbitrary code execution. Do it only if you got the file from a trusted source.
+        (2) Alternatively, to load with `weights_only=True` please check the recommended steps in the following error message.
+        WeightsUnpickler error: Unsupported global: GLOBAL numpy._core.multiarray.scalar was not an allowed global by default. Please use `torch.serialization.add_safe_globals([numpy._core.multiarray.scalar])` or the `torch.serialization.safe_globals([numpy._core.multiarray.scalar])` context manager to allowlist this global if you trust this class/function.
+
+Check the documentation of torch.load to learn more about types accepted by default with weights_only https://pytorch.org/docs/stable/generated/torch.load.html.
+
+Set the environment variable HYDRA_FULL_ERROR=1 for a complete stack trace.

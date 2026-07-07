@@ -1,0 +1,17 @@
+defaults:
+  - _self_
+
+# === Japanese ROHAN4600 multimodal corpus ===
+# Preprocessed dataset produced by preparation/preprocess_rohan.py from the raw
+# corpus in datasets/ROHAN4600 (see JAPANESE_AVSR.md for the directory layout
+# and label CSV format). Override on the CLI with data.dataset.root_dir=... .
+root_dir: C:/Users/Hiroyuki/gr_avsr/datasets/rohan_preprocessed
+label_dir: "labels"
+train_file: "rohan_train_transcript_lengths.csv"
+val_file: "rohan_val_transcript_lengths.csv"
+test_file: "rohan_test_transcript_lengths.csv"
+
+# Audio samples per video frame used to align audio/video in the dataloader.
+#   16000 Hz @ 25 fps -> 640  (model-native; used for ASR/VSR here)
+#   19200 Hz @ 25 fps -> 768  (paper's AVSR setting; reduces zero-padding)
+rate_ratio: 640

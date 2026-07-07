@@ -1,0 +1,8 @@
+2026/06/29 AV 4.256877675652504%  CER
+           A  4.037115350365639%  CER 
+2026/06/30 AV 4.3057139962911606% CER
+           A  4.403385892510414%  CER
+           V  1.2335177659988403% CER
+
+//Ignore this
+python train.py +experiment=rohan_vsr exp_dir=exp exp_name=abl_vsr pretrained_model_path=../module_extractor/frontends/frontend_visual_trlrs3.pth trainer.max_epochs=60 data.max_frames=800 data.max_frames_val=800 optimizer.lr=1e-4 optimizer.warmup_epochs=5 +data.num_workers=4 

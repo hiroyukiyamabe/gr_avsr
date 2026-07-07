@@ -1,0 +1,161 @@
+(avsr) PS C:\Users\Hiroyuki\gr_avsr\auto_avsr> ..\avsr\Scripts\python.exe train.py +experiment=rohan_vsr_fixed exp_dir=exp exp_name=rohan_vsr_fixed data.dataset.root_dir=C:/Users/Hiroyuki/gr_avsr/datasets/rohan_preprocessed_fixed pretrained_model_path=../module_extractor/frontends/frontend_visual_trlrs3.pth +data.num_workers=4
+W0702 00:04:35.542000 15784 Lib\site-packages\torch\utils\flop_counter.py:29] triton not found; flop counting will not work for triton kernels
+C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\connectors\logger_connector\logger_connector.py:76: Starting from v1.9.0, `tensorboardX` has been removed as a dependency of the `pytorch_lightning` package, due to potential conflicts with other packages in the ML ecosystem. For this reason, `logger=True` will use `CSVLogger` as the default logger, unless the `tensorboard` or `tensorboardX` packages are found. Please `pip install lightning[extra]` or one of them to enable TensorBoard support by default
+C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\torch\nn\modules\module.py:1369: UserWarning: expandable_segments not supported on this platform (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\c10/cuda/CUDAAllocatorConfig.h:40.)
+  return t.to(
+C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\utilities\_pytree.py:21: `isinstance(treespec, LeafSpec)` is deprecated, use `isinstance(treespec, TreeSpec) and treespec.is_leaf()` instead.
+W0702 00:04:38.436000 22692 Lib\site-packages\torch\utils\flop_counter.py:29] triton not found; flop counting will not work for triton kernels
+W0702 00:04:40.626000 6368 Lib\site-packages\torch\utils\flop_counter.py:29] triton not found; flop counting will not work for triton kernels
+W0702 00:04:42.627000 24444 Lib\site-packages\torch\utils\flop_counter.py:29] triton not found; flop counting will not work for triton kernels
+W0702 00:04:44.631000 23788 Lib\site-packages\torch\utils\flop_counter.py:29] triton not found; flop counting will not work for triton kernels
+Epoch 0: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████| 423/423 [10:50<00:00,  0.65it/s, v_num=24]W0702 00:15:37.855000 2712 Lib\site-packages\torch\utils\flop_counter.py:29] triton not found; flop counting will not work for triton kernels
+W0702 00:15:39.826000 11760 Lib\site-packages\torch\utils\flop_counter.py:29] triton not found; flop counting will not work for triton kernels
+W0702 00:15:41.813000 7844 Lib\site-packages\torch\utils\flop_counter.py:29] triton not found; flop counting will not work for triton kernels
+W0702 00:15:43.851000 22612 Lib\site-packages\torch\utils\flop_counter.py:29] triton not found; flop counting will not work for triton kernels
+Epoch 12:  93%|██████████████████████████████████████████████████████████████████████████████████████████▌      | 395/423 [25:10<01:47,  0.26it/s, v_num=24]Error executing job with overrides: ['+experiment=rohan_vsr_fixed', 'exp_dir=exp', 'exp_name=rohan_vsr_fixed', 'data.dataset.root_dir=C:/Users/Hiroyuki/gr_avsr/datasets/rohan_preprocessed_fixed', 'pretrained_model_path=../module_extractor/frontends/frontend_visual_trlrs3.pth', '+data.num_workers=4']
+Traceback (most recent call last):
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\call.py", line 49, in _call_and_handle_interrupt
+    return trainer_fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\trainer.py", line 630, in _fit_impl
+    self._run(model, ckpt_path=ckpt_path, weights_only=weights_only)
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\trainer.py", line 1079, in _run
+    results = self._run_stage()
+              ^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\trainer.py", line 1123, in _run_stage
+    self.fit_loop.run()
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\loops\fit_loop.py", line 217, in run
+    self.advance()
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\loops\fit_loop.py", line 469, in advance
+    self.epoch_loop.run(self._data_fetcher)
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\loops\training_epoch_loop.py", line 153, in run
+    self.advance(data_fetcher)
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\loops\training_epoch_loop.py", line 322, in advance
+    batch = call._call_strategy_hook(trainer, "batch_to_device", batch, dataloader_idx=0)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\call.py", line 329, in _call_strategy_hook
+    output = fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\strategies\strategy.py", line 278, in batch_to_device
+    return model._apply_batch_transfer_handler(batch, device=device, dataloader_idx=dataloader_idx)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\core\module.py", line 362, in _apply_batch_transfer_handler
+    batch = self._call_batch_hook("transfer_batch_to_device", batch, device, dataloader_idx)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\core\module.py", line 351, in _call_batch_hook
+    return trainer_method(trainer, hook_name, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\call.py", line 177, in _call_lightning_module_hook
+    output = fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\core\hooks.py", line 612, in transfer_batch_to_device
+    return move_data_to_device(batch, device)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\lightning_fabric\utilities\apply_func.py", line 110, in move_data_to_device
+    return apply_to_collection(batch, dtype=_TransferableDataType, function=batch_to)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\lightning_utilities\core\apply_func.py", line 76, in apply_to_collection
+    return {k: function(v, *args, **kwargs) for k, v in data.items()}
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\lightning_fabric\utilities\apply_func.py", line 104, in batch_to
+    data_output = data.to(device, **kwargs)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.AcceleratorError: CUDA error: unknown error
+Search for `cudaErrorUnknown' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\Hiroyuki\gr_avsr\auto_avsr\train.py", line 66, in main
+    trainer.fit(
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\trainer.py", line 584, in fit
+    call._call_and_handle_interrupt(
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\call.py", line 70, in _call_and_handle_interrupt
+    trainer._teardown()
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\trainer.py", line 1102, in _teardown
+    self.strategy.teardown()
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\strategies\strategy.py", line 532, in teardown
+    _optimizers_to_device(self.optimizers, torch.device("cpu"))
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\lightning_fabric\utilities\optimizer.py", line 27, in _optimizers_to_device
+    _optimizer_to_device(opt, device)
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\lightning_fabric\utilities\optimizer.py", line 41, in _optimizer_to_device
+    v[key] = move_data_to_device(val, device)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\lightning_fabric\utilities\apply_func.py", line 110, in move_data_to_device
+    return apply_to_collection(batch, dtype=_TransferableDataType, function=batch_to)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\lightning_utilities\core\apply_func.py", line 70, in apply_to_collection
+    return function(data, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\lightning_fabric\utilities\apply_func.py", line 104, in batch_to
+    data_output = data.to(device, **kwargs)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.AcceleratorError: CUDA error: unknown error
+Search for `cudaErrorUnknown' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+
+Set the environment variable HYDRA_FULL_ERROR=1 for a complete stack trace.
+Epoch 12:  93%|██████████████████████████████████████████████████████████████████████████████████████████▌      | 395/423 [26:07<01:51,  0.25it/s, v_num=24]
+[W702 05:03:58.000000000 CachingHostAllocator.cpp:26] Warning: Exception in pinned allocator free(), rethrowing (function free)
+Unhandled exception caught in c10/util/AbortHandler.h
+00007FF83EA4013600007FF83EA367B0 torch_python.dll!torch::autograd::THPCppFunction_requires_grad [<unknown file> @ <unknown line number>]
+00007FF8EF37218700007FF8EF372170 ucrtbase.dll!terminate [<unknown file> @ <unknown line number>]
+00007FF8DB421911 <unknown symbol address> VCRUNTIME140_1.dll!<unknown symbol> [<unknown file> @ <unknown line number>]
+00007FF8DB42218F <unknown symbol address> VCRUNTIME140_1.dll!<unknown symbol> [<unknown file> @ <unknown line number>]
+00007FF8DB4221E9 <unknown symbol address> VCRUNTIME140_1.dll!<unknown symbol> [<unknown file> @ <unknown line number>]
+00007FF8DB42401900007FF8DB423F70 VCRUNTIME140_1.dll!_CxxFrameHandler4 [<unknown file> @ <unknown line number>]
+00007FF8F21847AF00007FF8F2184710 ntdll.dll!_chkstk [<unknown file> @ <unknown line number>]
+00007FF8F20421C700007FF8F2041C30 ntdll.dll!RtlLocateExtendedFeature [<unknown file> @ <unknown line number>]
+00007FF8F20B6EA100007FF8F20B6C80 ntdll.dll!RtlRaiseException [<unknown file> @ <unknown line number>]
+00007FF8EF4C1B6A00007FF8EF4C1AE0 KERNELBASE.dll!RaiseException [<unknown file> @ <unknown line number>]
+00007FF8DB422610 <unknown symbol address> VCRUNTIME140_1.dll!<unknown symbol> [<unknown file> @ <unknown line number>]
+00007FF8F213F3E600007FF8F213EF40 ntdll.dll!RtlCaptureContext2 [<unknown file> @ <unknown line number>]
+00007FFF140515CE00007FFF1404ED20 torch_cuda.dll!at::cuda::flush_icache [<unknown file> @ <unknown line number>]
+00007FF87DFDB89D00007FF87DFDB820 c10.dll!c10::StorageImpl::~StorageImpl [<unknown file> @ <unknown line number>]
+00007FF87DFDBEE700007FF87DFDBC80 c10.dll!c10::VariableVersion::operator= [<unknown file> @ <unknown line number>]
+00007FF87DFFDD0600007FF87DFFDC90 c10.dll!c10::TensorImpl::~TensorImpl [<unknown file> @ <unknown line number>]
+00007FFF98A7C6D500007FFF98A7B0D0 torch_cpu.dll!at::DynamicLibrary::sym [<unknown file> @ <unknown line number>]
+00007FFF98A11EF800007FFF98A11EB0 torch_cpu.dll!at::Tensor::operator= [<unknown file> @ <unknown line number>]
+00007FF83EB063C900007FF83EADB310 torch_python.dll!torch::autograd::registerFunctionPreHook [<unknown file> @ <unknown line number>]
+00007FF86BC5255D00007FF86BC51B58 python312.dll!PyErr_Restore [<unknown file> @ <unknown line number>]
+00007FF86BC52AF200007FF86BC51B58 python312.dll!PyErr_Restore [<unknown file> @ <unknown line number>]
+00007FF86BC322CC00007FF86BC32054 python312.dll!PyObject_GC_UnTrack [<unknown file> @ <unknown line number>]
+00007FF86BC31F1800007FF86BC31868 python312.dll!PyLong_Lshift [<unknown file> @ <unknown line number>]
+00007FF86BC31F0900007FF86BC31868 python312.dll!PyLong_Lshift [<unknown file> @ <unknown line number>]
+00007FF86BC31F0900007FF86BC31868 python312.dll!PyLong_Lshift [<unknown file> @ <unknown line number>]
+00007FF86BC31F0900007FF86BC31868 python312.dll!PyLong_Lshift [<unknown file> @ <unknown line number>]
+00007FF86BC31F0900007FF86BC31868 python312.dll!PyLong_Lshift [<unknown file> @ <unknown line number>]
+00007FF86BC31F0900007FF86BC31868 python312.dll!PyLong_Lshift [<unknown file> @ <unknown line number>]
+00007FF86BC31F0900007FF86BC31868 python312.dll!PyLong_Lshift [<unknown file> @ <unknown line number>]
+00007FF86BC31F0900007FF86BC31868 python312.dll!PyLong_Lshift [<unknown file> @ <unknown line number>]
+00007FF86BC51D7A00007FF86BC51B58 python312.dll!PyErr_Restore [<unknown file> @ <unknown line number>]
+00007FF86BC5255D00007FF86BC51B58 python312.dll!PyErr_Restore [<unknown file> @ <unknown line number>]
+00007FF86BC51D9400007FF86BC51B58 python312.dll!PyErr_Restore [<unknown file> @ <unknown line number>]
+00007FF86BC5255D00007FF86BC51B58 python312.dll!PyErr_Restore [<unknown file> @ <unknown line number>]
+00007FF86BC17F2800007FF86BC17E60 python312.dll!PyObject_ClearManagedDict [<unknown file> @ <unknown line number>]
+00007FF86BC17F8C00007FF86BC17E60 python312.dll!PyObject_ClearManagedDict [<unknown file> @ <unknown line number>]
+00007FF86BC19CA000007FF86BC19800 python312.dll!PyArg_ParseTuple [<unknown file> @ <unknown line number>]
+00007FF86BC2FD0200007FF86BC2ECE4 python312.dll!PyDict_Update [<unknown file> @ <unknown line number>]
+00007FF86BC2F98700007FF86BC2ECE4 python312.dll!PyDict_Update [<unknown file> @ <unknown line number>]
+00007FF86BC0986A00007FF86BC09804 python312.dll!PyGC_Collect [<unknown file> @ <unknown line number>]
+00007FF86BC0952800007FF86BC0946C python312.dll!Py_FinalizeEx [<unknown file> @ <unknown line number>]
+00007FF86BD68C6D00007FF86BD68C60 python312.dll!Py_Exit [<unknown file> @ <unknown line number>]
+00007FF86BD68AC300007FF86BD688A0 python312.dll!PyErr_PrintEx [<unknown file> @ <unknown line number>]
+00007FF86BD6890000007FF86BD688A0 python312.dll!PyErr_PrintEx [<unknown file> @ <unknown line number>]
+00007FF86BCAA46400007FF86BCAA30C python312.dll!PyRun_SimpleFileObject [<unknown file> @ <unknown line number>]
+00007FF86BCACD1900007FF86BCACCCC python312.dll!PyRun_AnyFileObject [<unknown file> @ <unknown line number>]
+00007FF86BCACEEA00007FF86BCACDD0 python312.dll!PyEval_MakePendingCalls [<unknown file> @ <unknown line number>]
+00007FF86BCACBEB00007FF86BCAC988 python312.dll!PyErr_SetExcFromWindowsErrWithFilenameObjects [<unknown file> @ <unknown line number>]
+00007FF86BC08F1B00007FF86BC0891C python312.dll!PyMem_GetAllocator [<unknown file> @ <unknown line number>]
+00007FF86BC0870000007FF86BC086E8 python312.dll!Py_RunMain [<unknown file> @ <unknown line number>]
+00007FF86BC086E300007FF86BC086B8 python312.dll!Py_Main [<unknown file> @ <unknown line number>]
+00007FF6AF291230 <unknown symbol address> python.exe!<unknown symbol> [<unknown file> @ <unknown line number>]
+00007FF8F0C4E95700007FF8F0C4E940 KERNEL32.DLL!BaseThreadInitThunk [<unknown file> @ <unknown line number>]
+00007FF8F20A7C1C00007FF8F20A7BF0 ntdll.dll!RtlUserThreadStart [<unknown file> @ <unknown line number>]

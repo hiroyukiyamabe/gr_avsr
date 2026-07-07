@@ -1,0 +1,23 @@
+PS C:\Users\Hiroyuki\gr_avsr> cd C:\Users\Hiroyuki\gr_avsr\auto_avsr; $env:HYDRA_FULL_ERROR="1"; & "C:\Users\Hiroyuki\gr_avsr\avsr\Scripts\python.exe" train.py +experiment=rohan_avsr exp_dir=exp exp_name=rohan_avsr pretrained_visual_frontend_path=../module_extractor/frontends/frontend_visual_trlrs3.pth pretrained_audio_frontend_path=../module_extractor/frontends/frontend_audio_trlrs3.pth +data.num_workers=0 +data.pin_memory=False 2>&1 | Tee-Object -FilePath exp\rohan_avsr.log
+
+python.exe : W0627 13:37:09.313000 18456 Lib\site-packages\torch\utils\flop_counter.py:29] triton not found; flop
+counting will not work for triton kernels
+At line:1 char:68
++ ... _ERROR="1"; & "C:\Users\Hiroyuki\gr_avsr\avsr\Scripts\python.exe" tra ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (W0627 13:37:09.... triton kernels:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\connectors\logger_connector\logger_connector
+.py:76: Starting from v1.9.0, `tensorboardX` has been removed as a dependency of the `pytorch_lightning` package, due
+to potential conflicts with other packages in the ML ecosystem. For this reason, `logger=True` will use `CSVLogger` as
+the default logger, unless the `tensorboard` or `tensorboardX` packages are found. Please `pip install
+lightning[extra]` or one of them to enable TensorBoard support by default
+C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\utilities\_pytree.py:21: `isinstance(treespec,
+LeafSpec)` is deprecated, use `isinstance(treespec, TreeSpec) and treespec.is_leaf()` instead.
+C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\connectors\data_connector.py:434: The
+'train_dataloader' does not have many workers which may be a bottleneck. Consider increasing the value of the
+`num_workers` argument` to `num_workers=23` in the `DataLoader` to improve performance.
+C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\connectors\data_connector.py:434: The
+'val_dataloader' does not have many workers which may be a bottleneck. Consider increasing the value of the
+`num_workers` argument` to `num_workers=23` in the `DataLoader` to improve performance.

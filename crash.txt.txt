@@ -1,0 +1,23 @@
+ Bun crashed with a segmentation fault while you were running fix.
+
+Let me check what just crashed before doing anything else — I want to see the current state rather than assume.
+
+  Ran 1 shell command
+
+No python processes are running and no crash events were logged — so the training process itself isn't what's hanging around. The "Bun ... segfault" is almost certainly the Claude Code harness runtime (it's Bun-based) crashing, not your training job. That's a tooling hiccup, separate from the AVSR problem.
+
+Given how many times these heavy GPU+worker runs have destabilized things, I'm going to stop hammering the full training stack and instead validate the PyAV fix in isolation — a lightweight script that decodes many videos across spawn workers without loading CUDA, Lightning, or the model. If PyAV threading was the cause, this reproduces the segfault cheaply and proves the fix, with zero GPU risk.
+
+● Write(~\AppData\Local\Temp\claude\C--Users-Hiroyuki-gr-avsr\5f178fd3-3920-4510-99e9-33f17ef8665a\scratchpad\pyav_worker_test.py)
+Wrote 63 lines to ..\AppData\Local\Temp\claude\C--Users-Hiroyuki-gr-avsr\5f178fd3-3920-4510-99e9-33f17ef8665a\scratchpad\pyav_worker_test.py
+"""Isolated stress test: decode many videos across spawn workers.
+
+No CUDA, no Lightning, no model — just PyAV decoding in multiprocessing
+workers, the exact path that segfaulted (0xC0000005) inside the DataLoader.
+If the thread_type="NONE" fix works, this exits 0; if PyAV still crashes
+under spawn, this segfaults the same way (but cheaply, no GPU involved).
+"""
+import glob
+import os
+import sys
+… +53 lines

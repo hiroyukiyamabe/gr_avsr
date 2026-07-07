@@ -1,0 +1,15 @@
+❯ Could you remember what parameters we used for audio and audio-visual fine-tuning and evaluation?
+
+I'll pull the exact parameters from the experiment configs so I record what was actually used, then save to memory.
+
+  Read 2 files, recalled 1 memory
+
+I have everything I need. Let me record a dedicated parameters memory.
+
+  Wrote 2 memories
+
+Saved. Here's what I recorded (from the experiment configs + the actual runs):
+
+Shared (both): lr=1e-4, warmup_epochs=5, transfer_frontend=true, AdamW + cosine, lang=ja (CER).
+
+AVSR (audio-visual) — rohan_avsr.yaml

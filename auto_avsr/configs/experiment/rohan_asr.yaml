@@ -1,0 +1,27 @@
+# @package _global_
+# Japanese ASR baseline -- cross-lingual transfer, framework (c)/(d).
+# Fine-tune the audio front-end (1D ResNet-18) inherited from the English ASR
+# model; train the Conformer back-end + decoder from scratch.
+#
+# Usage (after extracting front-ends with module_extractor/extractor.py):
+#   python train.py +experiment=rohan_asr \
+#       exp_dir=exp exp_name=rohan_asr \
+#       data.dataset.root_dir=/path/to/rohan_preprocessed \
+#       pretrained_model_path=../module_extractor/frontends/frontend_audio_trlrs3.pth
+defaults:
+  - override /data/dataset: rohan
+
+data:
+  modality: audio
+  lang: ja
+  max_frames: 1600
+  max_frames_val: 1600
+
+optimizer:
+  lr: 1e-4
+  warmup_epochs: 5
+
+trainer:
+  max_epochs: 60
+
+transfer_frontend: true

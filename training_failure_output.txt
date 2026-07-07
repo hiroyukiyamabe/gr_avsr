@@ -1,0 +1,174 @@
+(avsr) PS C:\Users\Hiroyuki\gr_avsr\auto_avsr> Get-Content exp\rohan_avsr.err.log -Tail 20 -Wait
+W0628 13:03:41.875000 13960 Lib\site-packages\torch\utils\flop_counter.py:29] triton not found; flop counting will not work for triton kernels
+C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\connectors\logger_connector\logger_connector.py:76: Starting from v1.9.0, `tensorboardX` has been removed as a dependency of the `pytorch_lightning` package, due to potential conflicts with other packages in the ML ecosystem. For this reason, `logger=True` will use `CSVLogger` as the default logger, unless the `tensorboard` or `tensorboardX` packages are found. Please `pip install lightning[extra]` or one of them to enable TensorBoard support by default
+C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\callbacks\model_checkpoint.py:881: Checkpoint directory C:\Users\Hiroyuki\gr_avsr\auto_avsr\exp\rohan_avsr exists and is not empty.
+C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\utilities\_pytree.py:21: `isinstance(treespec, LeafSpec)` is deprecated, use `isinstance(treespec, TreeSpec) and treespec.is_leaf()` instead.
+W0628 13:03:45.309000 11240 Lib\site-packages\torch\utils\flop_counter.py:29] triton not found; flop counting will not work for triton kernels
+W0628 13:03:47.339000 11028 Lib\site-packages\torch\utils\flop_counter.py:29] triton not found; flop counting will not work for triton kernels
+W0628 13:03:49.311000 5508 Lib\site-packages\torch\utils\flop_counter.py:29] triton not found; flop counting will not work for triton kernels
+W0628 13:03:51.342000 10612 Lib\site-packages\torch\utils\flop_counter.py:29] triton not found; flop counting will not work for triton kernels
+W0628 13:13:50.987000 6028 Lib\site-packages\torch\utils\flop_counter.py:29] triton not found; flop counting will not work for triton kernels
+W0628 13:13:52.969000 6464 Lib\site-packages\torch\utils\flop_counter.py:29] triton not found; flop counting will not work for triton kernels
+W0628 13:13:54.909000 19412 Lib\site-packages\torch\utils\flop_counter.py:29] triton not found; flop counting will not work for triton kernels
+W0628 13:13:56.833000 1976 Lib\site-packages\torch\utils\flop_counter.py:29] triton not found; flop counting will not work for triton kernels
+Error executing job with overrides: ['+experiment=rohan_avsr', 'exp_dir=exp', 'exp_name=rohan_avsr', 'pretrained_visual_frontend_path=../module_extractor/frontends/frontend_visual_trlrs3.pth', 'pretrained_audio_frontend_path=../module_extractor/frontends/frontend_audio_trlrs3.pth', '+data.num_workers=4', '+data.pin_memory=True']
+
+Traceback (most recent call last):
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\call.py", line 49, in _call_and_handle_interrupt
+    return trainer_fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\trainer.py", line 630, in _fit_impl
+    self._run(model, ckpt_path=ckpt_path, weights_only=weights_only)
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\trainer.py", line 1079, in _run
+    results = self._run_stage()
+              ^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\trainer.py", line 1123, in _run_stage
+    self.fit_loop.run()
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\loops\fit_loop.py", line 217, in run
+    self.advance()
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\loops\fit_loop.py", line 469, in advance
+    self.epoch_loop.run(self._data_fetcher)
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\loops\training_epoch_loop.py", line 153, in run
+    self.advance(data_fetcher)
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\loops\training_epoch_loop.py", line 352, in advance
+    batch_output = self.automatic_optimization.run(trainer.optimizers[0], batch_idx, kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\loops\optimization\automatic.py", line 192, in run
+    self._optimizer_step(batch_idx, closure)
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\loops\optimization\automatic.py", line 270, in _optimizer_step
+    call._call_lightning_module_hook(
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\call.py", line 177, in _call_lightning_module_hook
+    output = fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\core\module.py", line 1368, in optimizer_step
+    optimizer.step(closure=optimizer_closure)
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\core\optimizer.py", line 154, in step
+    step_output = self._strategy.optimizer_step(self._optimizer, closure, **kwargs)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\strategies\strategy.py", line 239, in optimizer_step
+    return self.precision_plugin.optimizer_step(optimizer, model=model, closure=closure, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\plugins\precision\precision.py", line 123, in optimizer_step
+    return optimizer.step(closure=closure, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\torch\optim\optimizer.py", line 535, in wrapper
+    out = func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\torch\optim\optimizer.py", line 80, in _use_grad
+    ret = func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\torch\optim\adam.py", line 227, in step
+    loss = closure()
+           ^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\plugins\precision\precision.py", line 109, in _wrap_closure
+    closure_result = closure()
+                     ^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\loops\optimization\automatic.py", line 146, in __call__
+    self._result = self.closure(*args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\torch\utils\_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\loops\optimization\automatic.py", line 131, in closure
+    step_output = self._step_fn()
+                  ^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\loops\optimization\automatic.py", line 319, in _training_step
+    training_step_output = call._call_strategy_hook(trainer, "training_step", *kwargs.values())
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\call.py", line 329, in _call_strategy_hook
+    output = fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\strategies\strategy.py", line 391, in training_step
+    return self.lightning_module.training_step(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\auto_avsr\lightning_av.py", line 92, in training_step
+    return self._step(batch, batch_idx, step_type="train")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\auto_avsr\lightning_av.py", line 121, in _step
+    loss, loss_ctc, loss_att, acc = self.model(batch["videos"], batch["audios"], batch["video_lengths"], batch["audio_lengths"], batch["targets"])
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\torch\nn\modules\module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\torch\nn\modules\module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\auto_avsr\espnet\nets\pytorch_backend\e2e_asr_conformer_av.py", line 116, in forward
+    video_feat, _ = self.encoder(video, video_padding_mask)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\torch\nn\modules\module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\torch\nn\modules\module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\auto_avsr\espnet\nets\pytorch_backend\transformer\encoder.py", line 165, in forward
+    xs = self.frontend(xs)
+         ^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\torch\nn\modules\module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\torch\nn\modules\module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\auto_avsr\espnet\nets\pytorch_backend\backbones\conv3d_extractor.py", line 44, in forward
+    xs_pad = self.frontend3D(xs_pad)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\torch\nn\modules\module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\torch\nn\modules\module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\torch\nn\modules\container.py", line 253, in forward
+    input = module(input)
+            ^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\torch\nn\modules\module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\torch\nn\modules\module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\torch\nn\modules\conv.py", line 735, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\torch\nn\modules\conv.py", line 730, in _conv_forward
+    return F.conv3d(
+           ^^^^^^^^^
+RuntimeError: cuDNN error: CUDNN_STATUS_EXECUTION_FAILED
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\Hiroyuki\gr_avsr\auto_avsr\train.py", line 50, in main
+    trainer.fit(model=modelmodule, datamodule=datamodule, ckpt_path=cfg.ckpt_path)
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\trainer.py", line 584, in fit
+    call._call_and_handle_interrupt(
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\call.py", line 70, in _call_and_handle_interrupt
+    trainer._teardown()
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\trainer\trainer.py", line 1102, in _teardown
+    self.strategy.teardown()
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\pytorch_lightning\strategies\strategy.py", line 532, in teardown
+    _optimizers_to_device(self.optimizers, torch.device("cpu"))
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\lightning_fabric\utilities\optimizer.py", line 27, in _optimizers_to_device
+    _optimizer_to_device(opt, device)
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\lightning_fabric\utilities\optimizer.py", line 41, in _optimizer_to_device
+    v[key] = move_data_to_device(val, device)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\lightning_fabric\utilities\apply_func.py", line 110, in move_data_to_device
+    return apply_to_collection(batch, dtype=_TransferableDataType, function=batch_to)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\lightning_utilities\core\apply_func.py", line 70, in apply_to_collection
+    return function(data, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Hiroyuki\gr_avsr\avsr\Lib\site-packages\lightning_fabric\utilities\apply_func.py", line 104, in batch_to
+    data_output = data.to(device, **kwargs)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.AcceleratorError: CUDA error: unknown error
+Search for `cudaErrorUnknown' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+
+Set the environment variable HYDRA_FULL_ERROR=1 for a complete stack trace.

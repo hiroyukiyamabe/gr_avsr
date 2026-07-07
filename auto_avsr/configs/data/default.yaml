@@ -1,0 +1,14 @@
+defaults:
+  - _self_
+  - dataset: lrs3
+modality: video
+lang: en  # "en" -> SentencePiece (LRS3); "ja" -> character-based Katakana (ROHAN)
+use_audio_normalise: False
+max_frames: 1800
+max_frames_val: 500
+# Random audio noise augmentation applied during training. Each utterance is
+# noised (with probability noise_prob) at an SNR sampled uniformly from
+# noise_snr_levels (dB). A large value (999999) is effectively clean, so
+# including it leaves a share of utterances (near-)untouched.
+noise_snr_levels: [-5, 0, 5, 10, 15, 20, 999999]
+noise_prob: 1.0

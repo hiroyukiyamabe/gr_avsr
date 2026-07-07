@@ -1,0 +1,142 @@
+exp_dir: null
+exp_name: null
+gpus: null
+slurm_job_id: null
+file_path: null
+ckpt_path: null
+pretrained_model_path: exp/rohan_asr/model_avg_10.pth
+pretrained_visual_frontend_path: null
+pretrained_audio_frontend_path: null
+transfer_frontend: false
+transfer_encoder: null
+data:
+  modality: audio
+  lang: ja
+  use_audio_normalise: false
+  max_frames: 1600
+  max_frames_val: 1200
+  dataset:
+    root_dir: C:/Users/Hiroyuki/gr_avsr/datasets/rohan_preprocessed
+    label_dir: labels
+    train_file: rohan_train_transcript_lengths.csv
+    val_file: rohan_val_transcript_lengths.csv
+    test_file: rohan_test_transcript_lengths.csv
+    rate_ratio: 640
+  num_workers: 4
+  pin_memory: true
+model:
+  visual_backbone:
+    adim: 768
+    aheads: 12
+    eunits: 3072
+    elayers: 12
+    transformer_input_layer: conv3d
+    dropout_rate: 0.1
+    transformer_attn_dropout_rate: 0.1
+    transformer_encoder_attn_layer_type: rel_mha
+    macaron_style: true
+    use_cnn_module: true
+    cnn_module_kernel: 31
+    zero_triu: false
+    a_upsample_ratio: 1
+    relu_type: swish
+    ddim: 768
+    dheads: 12
+    dunits: 3072
+    dlayers: 6
+    lsm_weight: 0.1
+    transformer_length_normalized_loss: false
+    mtlalpha: 0.1
+    ctc_type: builtin
+    rel_pos_type: latest
+  audio_backbone:
+    adim: 768
+    aheads: 12
+    eunits: 3072
+    elayers: 12
+    transformer_input_layer: conv1d
+    dropout_rate: 0.1
+    transformer_attn_dropout_rate: 0.1
+    transformer_encoder_attn_layer_type: rel_mha
+    macaron_style: true
+    use_cnn_module: true
+    cnn_module_kernel: 31
+    zero_triu: false
+    a_upsample_ratio: 1
+    relu_type: swish
+    ddim: 768
+    dheads: 12
+    dunits: 3072
+    dlayers: 6
+    lsm_weight: 0.1
+    transformer_length_normalized_loss: false
+    mtlalpha: 0.1
+    ctc_type: builtin
+    rel_pos_type: latest
+  audiovisual_backbone:
+    adim: 768
+    aheads: 12
+    eunits: 3072
+    elayers: 12
+    transformer_input_layer: conv3d
+    dropout_rate: 0.1
+    transformer_attn_dropout_rate: 0.1
+    transformer_encoder_attn_layer_type: rel_mha
+    macaron_style: true
+    use_cnn_module: true
+    cnn_module_kernel: 31
+    zero_triu: false
+    a_upsample_ratio: 1
+    relu_type: swish
+    ddim: 768
+    dheads: 12
+    dunits: 3072
+    dlayers: 6
+    lsm_weight: 0.1
+    transformer_length_normalized_loss: false
+    mtlalpha: 0.1
+    ctc_type: builtin
+    rel_pos_type: latest
+    aux_adim: 768
+    aux_aheads: 12
+    aux_eunits: 3072
+    aux_elayers: 12
+    aux_transformer_input_layer: conv1d
+    aux_dropout_rate: 0.1
+    aux_transformer_attn_dropout_rate: 0.1
+    aux_transformer_encoder_attn_layer_type: rel_mha
+    aux_macaron_style: true
+    aux_use_cnn_module: true
+    aux_cnn_module_kernel: 31
+    aux_zero_triu: false
+    aux_a_upsample_ratio: 1
+    aux_relu_type: swish
+    aux_dunits: 3072
+    aux_dlayers: 6
+    aux_lsm_weight: 0.1
+    aux_transformer_length_normalized_loss: false
+    aux_mtlalpha: 0.1
+    aux_ctc_type: builtin
+    aux_rel_pos_type: latest
+    fusion_hdim: 8192
+    fusion_norm: batchnorm
+optimizer:
+  name: adamw
+  lr: 0.0001
+  warmup_epochs: 5
+  weight_decay: 0.03
+trainer:
+  precision: 32
+  max_epochs: 60
+  num_nodes: 1
+  accelerator: auto
+  devices: auto
+  sync_batchnorm: true
+  default_root_dir: null
+  num_sanity_val_steps: 0
+  accumulate_grad_batches: 1
+  gradient_clip_val: 5.0
+  use_distributed_sampler: false
+decode:
+  name: default
+  snr_target: 999999

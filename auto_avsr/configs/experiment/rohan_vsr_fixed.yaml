@@ -1,0 +1,27 @@
+# @package _global_
+# Japanese VSR baseline -- cross-lingual transfer, framework (c), RETRAIN on the
+# preprocessing-fixed corpus (25 fps, 96x96 mouth-normalised ROI). Identical
+# hyperparameters to rohan_vsr; only the input data pipeline differs.
+#
+# Usage:
+#   python train.py +experiment=rohan_vsr_fixed \
+#       exp_dir=exp exp_name=rohan_vsr_fixed \
+#       data.dataset.root_dir=../datasets/rohan_preprocessed_fixed \
+#       pretrained_model_path=../module_extractor/frontends/frontend_visual_trlrs3.pth
+defaults:
+  - override /data/dataset: rohan
+
+data:
+  modality: video
+  lang: ja
+  max_frames: 1600
+  max_frames_val: 1600
+
+optimizer:
+  lr: 1e-4
+  warmup_epochs: 5
+
+trainer:
+  max_epochs: 60
+
+transfer_frontend: true

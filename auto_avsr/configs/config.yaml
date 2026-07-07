@@ -1,0 +1,29 @@
+defaults:
+  - _self_
+  - data: default
+  - model: default
+  - optimizer: adamw
+  - trainer: train
+  - decode: default
+  - override hydra/hydra_logging: disabled
+  - override hydra/job_logging: disabled
+hydra:  
+  output_subdir: null  
+  run:  
+    dir: .
+exp_dir:
+exp_name:
+gpus: 
+slurm_job_id:
+file_path:
+ckpt_path:
+pretrained_model_path:
+# Cross-lingual front-end transfer (AVSR): separate extracted front-ends for
+# each modality. Produced by module_extractor/extractor.py. Used by lightning_av
+# when transfer_frontend=True. For ASR/VSR (single modality) use
+# pretrained_model_path + transfer_frontend instead.
+pretrained_visual_frontend_path:
+pretrained_audio_frontend_path:
+transfer_frontend:
+transfer_encoder:
+

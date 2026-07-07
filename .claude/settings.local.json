@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(awk '{print $3}')",
+      "Read(//c/Users/Hiroyuki/**)",
+      "Bash(../avsr/Scripts/python.exe preparation/export_best_val.py exp/rohan_vsr_fixed)"
+    ]
+  }
+}
