@@ -26,6 +26,11 @@ without the leading ``frontend.`` that the full checkpoints carry.
 This script performs that conversion: it reads a full checkpoint, keeps only the
 ``frontend.*`` tensors, strips the prefix, and writes a small front-end-only
 checkpoint that ``transfer_frontend`` can load as-is.
+
+Audio-visual checkpoints (``--av``): the AV model stores the visual front-end at
+``encoder.frontend.*`` and the audio front-end at ``aux_encoder.frontend.*``.
+``--av --src avsr_trlrwlrs2lrs3vox2avsp_base.pth`` extracts both in one pass and
+writes ``frontend_visual_3448.pth`` + ``frontend_audio_3448.pth``.
 """
 
 import argparse
@@ -46,24 +51,41 @@ DEFAULT_JOBS = {
 }
 
 
-def extract_frontend(ckpt_path: Path):
-    """Return a front-end-only state dict keyed as ``trunk.*`` / ``frontend3D.*``."""
+def _load_state(ckpt_path: Path):
     ckpt = torch.load(ckpt_path, map_location="cpu")
     # Unwrap if the checkpoint is wrapped (some are saved as {"model_state_dict": ...}).
-    state = ckpt.get("model_state_dict", ckpt.get("state_dict", ckpt)) if isinstance(ckpt, dict) else ckpt
+    return ckpt.get("model_state_dict", ckpt.get("state_dict", ckpt)) if isinstance(ckpt, dict) else ckpt
 
-    frontend = {
-        k[len("frontend."):]: v
-        for k, v in state.items()
-        if k.startswith("frontend.")
-    }
-    if not frontend:
+
+def _strip_prefix(state, prefix, ckpt_name):
+    sub = {k[len(prefix):]: v for k, v in state.items() if k.startswith(prefix)}
+    if not sub:
         raise RuntimeError(
-            f"No 'frontend.*' keys found in {ckpt_path.name}. "
+            f"No '{prefix}*' keys found in {ckpt_name}. "
             f"Top-level prefixes present: "
             f"{sorted({k.split('.')[0] for k in state})}"
         )
-    return frontend
+    return sub
+
+
+def extract_frontend(ckpt_path: Path):
+    """Return a front-end-only state dict keyed as ``trunk.*`` / ``frontend3D.*``."""
+    return _strip_prefix(_load_state(ckpt_path), "frontend.", ckpt_path.name)
+
+
+def extract_av_frontends(ckpt_path: Path):
+    """Extract BOTH front-ends from an audio-visual (avsr_*) checkpoint.
+
+    The AV model (``e2e_asr_conformer_av.py``) keeps the visual front-end at
+    ``encoder.frontend.*`` and the audio front-end at ``aux_encoder.frontend.*``.
+    Returns ``(visual_frontend, audio_frontend)``, each keyed relative to the
+    front-end module (``trunk.*`` / ``frontend3D.*``) like the single-modality
+    extraction, so ``transfer_frontend`` loads them unchanged.
+    """
+    state = _load_state(ckpt_path)
+    visual = _strip_prefix(state, "encoder.frontend.", ckpt_path.name)
+    audio = _strip_prefix(state, "aux_encoder.frontend.", ckpt_path.name)
+    return visual, audio
 
 
 def main():
@@ -76,16 +98,42 @@ def main():
                         help="Single source checkpoint filename (overrides defaults).")
     parser.add_argument("--dst", type=str, default=None,
                         help="Output filename for --src.")
+    parser.add_argument("--av", action="store_true",
+                        help="Treat --src as an audio-visual (avsr_*) checkpoint and "
+                             "extract BOTH front-ends: encoder.frontend.* -> visual, "
+                             "aux_encoder.frontend.* -> audio.")
     parser.add_argument("--inspect", action="store_true",
                         help="Only print the front-end keys/shapes, do not write.")
     args = parser.parse_args()
+
+    args.out_dir.mkdir(parents=True, exist_ok=True)
+
+    def report_and_save(frontend, dst):
+        print(f"  {len(frontend)} front-end tensors")
+        for k in list(frontend)[:6]:
+            print(f"    {k}  {tuple(frontend[k].shape)}")
+        if len(frontend) > 6:
+            print("    ...")
+        if not args.inspect:
+            out_path = args.out_dir / dst
+            torch.save({"model_state_dict": frontend}, out_path)
+            print(f"    saved -> {out_path}")
+
+    if args.av:
+        if not args.src:
+            parser.error("--av requires --src")
+        src_path = args.ckpt_dir / args.src
+        visual, audio = extract_av_frontends(src_path)
+        print(f"\n{args.src} [visual: encoder.frontend.*]")
+        report_and_save(visual, "frontend_visual_3448.pth")
+        print(f"\n{args.src} [audio: aux_encoder.frontend.*]")
+        report_and_save(audio, "frontend_audio_3448.pth")
+        return
 
     if args.src:
         jobs = {args.src: args.dst or ("frontend_" + args.src)}
     else:
         jobs = DEFAULT_JOBS
-
-    args.out_dir.mkdir(parents=True, exist_ok=True)
 
     for src, dst in jobs.items():
         src_path = args.ckpt_dir / src
@@ -93,16 +141,8 @@ def main():
             print(f"[skip] {src_path} not found")
             continue
         frontend = extract_frontend(src_path)
-        print(f"\n{src}  ->  {len(frontend)} front-end tensors")
-        for k in list(frontend)[:6]:
-            print(f"    {k}  {tuple(frontend[k].shape)}")
-        if len(frontend) > 6:
-            print("    ...")
-
-        if not args.inspect:
-            out_path = args.out_dir / dst
-            torch.save({"model_state_dict": frontend}, out_path)
-            print(f"    saved -> {out_path}")
+        print(f"\n{src}")
+        report_and_save(frontend, dst)
 
 
 if __name__ == "__main__":

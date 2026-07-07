@@ -86,48 +86,68 @@ workflow, and replicate their noise table (Table IV) with white noise.
 
 ## Commands
 
-All training/eval commands run from `auto_avsr/` in the project venv.
+**Shell: Windows PowerShell 5.1.** Do NOT use bash syntax: no `&&` (run commands
+on separate lines or join with `;`), no `\` line continuation (PowerShell uses a
+trailing backtick `` ` ``), no `VAR=x cmd` env prefix, no `for x in …; do`.
+All commands below are PowerShell-ready. Long commands use backtick
+continuation — the backtick must be the LAST character on the line (no trailing
+spaces), or paste the command as a single line.
 
-### Phase 0 — assets (once)
+Setup for every session (activate the project venv, go to the training dir):
 
-```bash
+```powershell
+cd C:\Users\Hiroyuki\gr_avsr
+& .\avsr\Scripts\Activate.ps1
+$env:PYTHONIOENCODING = "utf-8"
+```
+
+### Phase 0 — assets (once, from repo root `C:\Users\Hiroyuki\gr_avsr`)
+
+```powershell
 # Download the canonical AV checkpoint (Drive link from auto_avsr-1.0.0 README;
 # MD5 must start with 6b3c5)
 pip install gdown
-gdown 1mU6MHzXMiq1m6GI-8gqT2zc2bdStuBXu -O original_checkpoints/avsr_trlrwlrs2lrs3vox2avsp_base.pth
+gdown 1mU6MHzXMiq1m6GI-8gqT2zc2bdStuBXu -O original_checkpoints\avsr_trlrwlrs2lrs3vox2avsp_base.pth
 
-# Extract both front-ends from the single AV checkpoint (after code change #1)
-python module_extractor/extractor.py --av --src avsr_trlrwlrs2lrs3vox2avsp_base.pth
-# -> module_extractor/frontends/frontend_visual_3448.pth
-# -> module_extractor/frontends/frontend_audio_3448.pth
+# Verify the download (compare against 6b3c5…)
+Get-FileHash -Algorithm MD5 original_checkpoints\avsr_trlrwlrs2lrs3vox2avsp_base.pth
+
+# Extract both front-ends from the single AV checkpoint (after code change #1).
+# extractor.py resolves ckpt/out dirs relative to its own location, so this
+# works from the repo root:
+python module_extractor\extractor.py --av --src avsr_trlrwlrs2lrs3vox2avsp_base.pth
+# -> module_extractor\frontends\frontend_visual_3448.pth
+# -> module_extractor\frontends\frontend_audio_3448.pth
 ```
 
-### Phase 1 — fine-tunes (4 runs)
+### Phase 1 — fine-tunes (4 runs, from `auto_avsr\`)
 
-```bash
+```powershell
+cd C:\Users\Hiroyuki\gr_avsr\auto_avsr
+
 # 1) ASR — paper spec exactly (60 epochs, max_frames 1600). ~fast.
-python train.py +experiment=rohan_asr exp_dir=exp exp_name=rohan_asr_3448 \
-  data.dataset.root_dir=../datasets/rohan_preprocessed_fixed \
-  pretrained_model_path=../module_extractor/frontends/frontend_audio_3448.pth \
+python train.py +experiment=rohan_asr exp_dir=exp exp_name=rohan_asr_3448 `
+  data.dataset.root_dir=../datasets/rohan_preprocessed_fixed `
+  pretrained_model_path=../module_extractor/frontends/frontend_audio_3448.pth `
   +data.num_workers=2
 
 # 2) VSR — 60 epochs; 1000 frames / 2 workers (stability constraint). ~10.5 h.
-python train.py +experiment=rohan_vsr_fixed exp_dir=exp exp_name=rohan_vsr_3448 \
-  pretrained_model_path=../module_extractor/frontends/frontend_visual_3448.pth \
+python train.py +experiment=rohan_vsr_fixed exp_dir=exp exp_name=rohan_vsr_3448 `
+  pretrained_model_path=../module_extractor/frontends/frontend_visual_3448.pth `
   data.max_frames=1000 data.max_frames_val=1000 +data.num_workers=2
 
 # 3) AVSR arm A: STATIC fusion = Tamura reproduction (frozen gate). ~7 h.
-python train.py +experiment=rohan_avsr_fixed exp_dir=exp exp_name=rohan_avsr_3448_static \
-  model.audiovisual_backbone.fusion_gate_freeze=true \
-  pretrained_visual_frontend_path=../module_extractor/frontends/frontend_visual_3448.pth \
-  pretrained_audio_frontend_path=../module_extractor/frontends/frontend_audio_3448.pth \
+python train.py +experiment=rohan_avsr_fixed exp_dir=exp exp_name=rohan_avsr_3448_static `
+  model.audiovisual_backbone.fusion_gate_freeze=true `
+  pretrained_visual_frontend_path=../module_extractor/frontends/frontend_visual_3448.pth `
+  pretrained_audio_frontend_path=../module_extractor/frontends/frontend_audio_3448.pth `
   +data.num_workers=2
 
 # 4) AVSR arm B: DYNAMIC fusion — identical except the gate trains. ~7 h.
-python train.py +experiment=rohan_avsr_fixed exp_dir=exp exp_name=rohan_avsr_3448_gated \
-  model.audiovisual_backbone.fusion_gate_freeze=false \
-  pretrained_visual_frontend_path=../module_extractor/frontends/frontend_visual_3448.pth \
-  pretrained_audio_frontend_path=../module_extractor/frontends/frontend_audio_3448.pth \
+python train.py +experiment=rohan_avsr_fixed exp_dir=exp exp_name=rohan_avsr_3448_gated `
+  model.audiovisual_backbone.fusion_gate_freeze=false `
+  pretrained_visual_frontend_path=../module_extractor/frontends/frontend_visual_3448.pth `
+  pretrained_audio_frontend_path=../module_extractor/frontends/frontend_audio_3448.pth `
   +data.num_workers=2
 
 # Crash recovery (any run): append  ckpt_path=exp/<exp_name>/last.ckpt
@@ -136,40 +156,43 @@ python train.py +experiment=rohan_avsr_fixed exp_dir=exp exp_name=rohan_avsr_344
 
 ### Phase 2 — clean evaluation (restored original eval.py; avg-10 checkpoint)
 
-```bash
+```powershell
+cd C:\Users\Hiroyuki\gr_avsr\auto_avsr
+$env:PYTHONIOENCODING = "utf-8"
+
 # ASR
-PYTHONIOENCODING=utf-8 python eval.py +experiment=rohan_asr exp_dir=exp exp_name=rohan_asr_3448 \
-  data.dataset.root_dir=../datasets/rohan_preprocessed_fixed \
-  pretrained_model_path=exp/rohan_asr_3448/model_avg_10.pth transfer_frontend=false \
+python eval.py +experiment=rohan_asr exp_dir=exp exp_name=rohan_asr_3448 `
+  data.dataset.root_dir=../datasets/rohan_preprocessed_fixed `
+  pretrained_model_path=exp/rohan_asr_3448/model_avg_10.pth transfer_frontend=false `
   +data.num_workers=2
 
 # VSR
-PYTHONIOENCODING=utf-8 python eval.py +experiment=rohan_vsr_fixed exp_dir=exp exp_name=rohan_vsr_3448 \
-  pretrained_model_path=exp/rohan_vsr_3448/model_avg_10.pth transfer_frontend=false \
+python eval.py +experiment=rohan_vsr_fixed exp_dir=exp exp_name=rohan_vsr_3448 `
+  pretrained_model_path=exp/rohan_vsr_3448/model_avg_10.pth transfer_frontend=false `
   +data.num_workers=2
 
 # AVSR (both arms; frontend paths are constructor-required, discarded on load)
-PYTHONIOENCODING=utf-8 python eval.py +experiment=rohan_avsr_fixed exp_dir=exp exp_name=rohan_avsr_3448_static \
-  pretrained_model_path=exp/rohan_avsr_3448_static/model_avg_10.pth transfer_frontend=false \
-  pretrained_visual_frontend_path=../module_extractor/frontends/frontend_visual_3448.pth \
-  pretrained_audio_frontend_path=../module_extractor/frontends/frontend_audio_3448.pth \
+python eval.py +experiment=rohan_avsr_fixed exp_dir=exp exp_name=rohan_avsr_3448_static `
+  pretrained_model_path=exp/rohan_avsr_3448_static/model_avg_10.pth transfer_frontend=false `
+  pretrained_visual_frontend_path=../module_extractor/frontends/frontend_visual_3448.pth `
+  pretrained_audio_frontend_path=../module_extractor/frontends/frontend_audio_3448.pth `
   +data.num_workers=2
 # repeat with exp_name=rohan_avsr_3448_gated
 
 # NOTE: logged cer is a RAW FRACTION -> multiply by 100 for %.
 # Diagnostic only (not the reproduction number):
-#   python preparation/export_best_val.py exp/<exp_name>   # -> best_val_model.pth
+#   python preparation\export_best_val.py exp\<exp_name>   # -> best_val_model.pth
 ```
 
 ### Phase 3 — Table IV replica (white noise; ASR + both AVSR arms)
 
-```bash
+```powershell
 # after code change #3; noise file resampled to 16 kHz
-for snr in 999999 10 5; do
-  PYTHONIOENCODING=utf-8 python eval.py <args as in Phase 2> \
-    decode.snr_target=$snr \
+foreach ($snr in 999999, 10, 5) {
+  python eval.py <args as in Phase 2> `
+    decode.snr_target=$snr `
     decode.noise_filename=../noise_datasets/white_16k.wav
-done
+}
 # For the gated-vs-static SNR curves + gate-weight tracking, use eval_sweep.py
 # (same args) — it appends to exp/snr_sweep_<exp_name>.csv for plot_snr_sweep.py.
 ```
@@ -178,11 +201,15 @@ done
 
 ## Order of execution / checklist
 
-- [ ] Code change #1 (extractor `--av`)
+- [x] Code change #1 (extractor `--av`) — done 2026-07-08, tested on synthetic +
+      real checkpoint; single-modality path regression-tested.
 - [ ] Code change #2 (`eval.py` ← original; current → `eval_sweep.py`)
 - [ ] Code change #3 (`decode.noise_filename` + white_16k.wav)
 - [ ] Code change #4 (`rohan_avsr_fixed.yaml`)
-- [ ] Download AV checkpoint (MD5 6b3c5…) + extract front-ends
+- [x] Download AV checkpoint + extract front-ends — done 2026-07-08. MD5 verified
+      (6B3C53AE…). `frontend_{visual,audio}_3448.pth` written, 120 tensors each,
+      key/shape layout verified IDENTICAL to the known-good trlrs3 frontends
+      (strict `transfer_frontend` load guaranteed).
 - [ ] Train ASR → eval (target ≈ 3.9%)
 - [ ] Train VSR → eval (target ≈ 19.7%; if ≥ ~24%, run the modality-matched
       `vsr_trlrwlrs2lrs3vox2avsp` frontend ablation before touching the crop)
