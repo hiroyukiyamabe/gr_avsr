@@ -229,3 +229,51 @@ foreach ($snr in 999999, 10, 5) {
 - [ ] Train AVSR gated → eval clean
 - [ ] Table IV white-noise sweep (ASR, AVSR-static, AVSR-gated @ clean/10/5 dB)
 - [ ] Write up: reproduction table + static-vs-gated comparison
+
+---
+
+## Incident log
+
+### 2026-07-08 — VSR run #1 invalid (150% CER): trained on the wrong dataset
+
+**Symptom.** First `rohan_vsr_3448` run (3,448 h visual frontend) evaluated at
+**150% CER** — the same pathological regime as the pre-fix 123% collapse, even
+though ASR had just reproduced the paper exactly (3.87% vs 3.88%).
+
+**Root cause.** The Phase 1 VSR command in this plan omitted the
+`data.dataset.root_dir` override. `rohan_vsr_fixed.yaml` — despite its name —
+did not bake in the fixed dataset path; it inherited the default from
+`configs/data/dataset/rohan.yaml`, which points at the ORIGINAL broken
+preprocessing `datasets/rohan_preprocessed` (un-cropped 300×300 ROI, ~30 fps).
+The run therefore trained AND evaluated on out-of-distribution video. The ASR
+command happened to include the override, which is why ASR was unaffected
+(and ASR audio is identical across both dataset versions anyway).
+
+**Evidence** (from the runs' own logged hparams — check these, not the command
+you think you ran):
+
+- Training log `auto_avsr/exp/lightning_logs/version_30/hparams.yaml`:
+  `root_dir: C:/Users/Hiroyuki/gr_avsr/datasets/rohan_preprocessed` (wrong).
+- Eval log `auto_avsr/lightning_logs/version_9/hparams.yaml`: same wrong root.
+- Training curve = the known wrong-video memorization fingerprint: best
+  `loss_val` 93.4 at **epoch 9**, rising afterwards — numerically matching the
+  original broken-preprocessing failure (val loss 93→137, best epoch 8).
+  `model_avg_10.pth` then averages epochs 50–59 (the most-overfit), producing
+  gibberish longer than the references → CER > 100%.
+
+**What this run does NOT show:** anything about the 3,448 h frontend. The
+frontend-scale hypothesis (27.26% → ~19.7%) remains untested until the rerun.
+
+**Fix (applied 2026-07-08).**
+- `rohan_vsr_fixed.yaml` now hard-codes
+  `data.dataset.root_dir: C:/Users/Hiroyuki/gr_avsr/datasets/rohan_preprocessed_fixed`
+  (verified via hydra composition). `rohan_avsr_fixed.yaml` already had it.
+- Rule going forward: **experiment configs must bake in their dataset root**;
+  never depend on a CLI override for data identity. Overrides are for
+  hyperparameters, not for which data a run sees.
+- Stale artefacts: `exp/rohan_vsr_3448/` (~33 GB) and the version_30/version_9
+  logs are garbage; delete or rename before the rerun.
+
+**Early-detection check for the rerun:** by epoch ~10, `loss_val` must be well
+below ~90 and still falling. `loss_val` ≈ 93 flattening at epoch ~9 = wrong
+data; kill the run immediately instead of burning 10 h.
