@@ -217,6 +217,14 @@ foreach ($snr in 999999, 10, 5) {
       evaluated `model_avg_10.pth` via restored original eval.py.
 - [ ] Train VSR → eval (target ≈ 19.7%; if ≥ ~24%, run the modality-matched
       `vsr_trlrwlrs2lrs3vox2avsp` frontend ablation before touching the crop)
+      - **First attempt (2026-07-08) INVALID — 150% CER, not a frontend result.**
+        The plan's original VSR command omitted `data.dataset.root_dir`, so the
+        run trained AND evaluated on the broken `rohan_preprocessed` videos
+        (old 300px/30fps). Training curve = the known memorization collapse
+        (best loss_val 93.4 @ epoch 9, then rising — same as the old 123% run).
+        Fix: fixed root_dir is now BAKED INTO `rohan_vsr_fixed.yaml`; commands
+        above are correct as written. `exp/rohan_vsr_3448/` from the bad run
+        (~33 GB of checkpoints) can be deleted before rerunning.
 - [ ] Train AVSR static → eval clean (target ≈ 2.8%)
 - [ ] Train AVSR gated → eval clean
 - [ ] Table IV white-noise sweep (ASR, AVSR-static, AVSR-gated @ clean/10/5 dB)
