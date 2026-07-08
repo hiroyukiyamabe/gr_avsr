@@ -120,7 +120,9 @@ class DataModule(LightningDataModule):
             subset="test",
             modality=self.cfg.data.modality,
             audio_transform=AudioTransform(
-                "test", snr_target=self.cfg.decode.snr_target
+                "test",
+                snr_target=self.cfg.decode.snr_target,
+                noise_filename=self.cfg.decode.get("noise_filename", None),
             ),
             video_transform=VideoTransform("test"),
             rate_ratio=getattr(ds_args, "rate_ratio", 640),

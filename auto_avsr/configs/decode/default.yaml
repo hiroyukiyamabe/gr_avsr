@@ -1,2 +1,6 @@
 name: default
 snr_target: 999999
+# Eval-time noise source. null = the original babble_noise.wav. Set to a 16 kHz
+# wav (e.g. ../noise_datasets/white_16k.wav) for the white-noise Table IV replica.
+# Only used when snr_target pins a finite SNR; training noise is unaffected.
+noise_filename:

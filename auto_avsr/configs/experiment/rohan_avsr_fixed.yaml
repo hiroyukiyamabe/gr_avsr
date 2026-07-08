@@ -1,0 +1,40 @@
+# @package _global_
+# Japanese AVSR -- cross-lingual transfer, framework (c), on the preprocessing-
+# fixed corpus (25 fps, 96x96 mouth ROI). BOTH front-ends are inherited from the
+# canonical 3,448h English AVSR checkpoint (avsr_trlrwlrs2lrs3vox2avsp_base.pth,
+# extracted via module_extractor/extractor.py --av) and fine-tuned; Conformer
+# back-ends, fusion, CTC and decoder train from scratch. See REPRODUCTION_PLAN.md.
+#
+# Twin-run arms (only difference between them):
+#   static (Tamura reproduction): model.audiovisual_backbone.fusion_gate_freeze=true
+#   dynamic (gated fusion):       model.audiovisual_backbone.fusion_gate_freeze=false
+#
+# Usage:
+#   python train.py +experiment=rohan_avsr_fixed exp_dir=exp `
+#     exp_name=rohan_avsr_3448_static `
+#     model.audiovisual_backbone.fusion_gate_freeze=true +data.num_workers=2
+defaults:
+  - override /data/dataset: rohan
+
+data:
+  modality: audiovisual
+  lang: ja
+  max_frames: 1000       # paper: 1,000 frames/batch for AVSR
+  max_frames_val: 1000
+  dataset:
+    root_dir: C:/Users/Hiroyuki/gr_avsr/datasets/rohan_preprocessed_fixed
+
+optimizer:
+  lr: 1e-4
+  warmup_epochs: 5
+
+trainer:
+  max_epochs: 40         # paper: 40 epochs for AVSR
+
+transfer_frontend: true
+pretrained_visual_frontend_path: C:/Users/Hiroyuki/gr_avsr/module_extractor/frontends/frontend_visual_3448.pth
+pretrained_audio_frontend_path: C:/Users/Hiroyuki/gr_avsr/module_extractor/frontends/frontend_audio_3448.pth
+
+# Audio stays 16 kHz with rate_ratio 640 (exact A/V sync at 25 fps). The paper's
+# 19,200 Hz / rate_ratio 768 was a workaround for zero-padding we don't have --
+# an accepted deviation, see REPRODUCTION_PLAN.md.

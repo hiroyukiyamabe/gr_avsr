@@ -160,7 +160,11 @@ class VideoTransform:
 
 
 class AudioTransform:
-    def __init__(self, subset, snr_target=None, snr_levels=None, noise_prob=1.0):
+    def __init__(self, subset, snr_target=None, snr_levels=None, noise_prob=1.0,
+                 noise_filename=None):
+        # ``noise_filename`` only affects eval-time noise (decode.noise_filename,
+        # e.g. white noise for the Kondo & Tamura Table IV replica). Training
+        # augmentation keeps the original babble noise regardless.
         if subset == "train":
             self.audio_pipeline = torch.nn.Sequential(
                 AdaptiveTimeMask(6400, 16000),
@@ -171,7 +175,8 @@ class AudioTransform:
             )
         elif subset == "val" or subset == "test":
             self.audio_pipeline = torch.nn.Sequential(
-                AddNoise(snr_target=snr_target)
+                AddNoise(snr_target=snr_target,
+                         noise_filename=noise_filename or NOISE_FILENAME)
                 if snr_target is not None
                 else FunctionalModule(_identity),
                 FunctionalModule(_instance_layer_norm),

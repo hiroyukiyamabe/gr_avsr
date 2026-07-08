@@ -137,18 +137,13 @@ python train.py +experiment=rohan_vsr_fixed exp_dir=exp exp_name=rohan_vsr_3448 
   data.max_frames=1000 data.max_frames_val=1000 +data.num_workers=2
 
 # 3) AVSR arm A: STATIC fusion = Tamura reproduction (frozen gate). ~7 h.
+#    (fixed root_dir + 3,448h frontend paths are baked into rohan_avsr_fixed.yaml)
 python train.py +experiment=rohan_avsr_fixed exp_dir=exp exp_name=rohan_avsr_3448_static `
-  model.audiovisual_backbone.fusion_gate_freeze=true `
-  pretrained_visual_frontend_path=../module_extractor/frontends/frontend_visual_3448.pth `
-  pretrained_audio_frontend_path=../module_extractor/frontends/frontend_audio_3448.pth `
-  +data.num_workers=2
+  model.audiovisual_backbone.fusion_gate_freeze=true +data.num_workers=2
 
 # 4) AVSR arm B: DYNAMIC fusion — identical except the gate trains. ~7 h.
 python train.py +experiment=rohan_avsr_fixed exp_dir=exp exp_name=rohan_avsr_3448_gated `
-  model.audiovisual_backbone.fusion_gate_freeze=false `
-  pretrained_visual_frontend_path=../module_extractor/frontends/frontend_visual_3448.pth `
-  pretrained_audio_frontend_path=../module_extractor/frontends/frontend_audio_3448.pth `
-  +data.num_workers=2
+  model.audiovisual_backbone.fusion_gate_freeze=false +data.num_workers=2
 
 # Crash recovery (any run): append  ckpt_path=exp/<exp_name>/last.ckpt
 # and change NOTHING else (keep the cosine schedule intact).
@@ -171,11 +166,9 @@ python eval.py +experiment=rohan_vsr_fixed exp_dir=exp exp_name=rohan_vsr_3448 `
   pretrained_model_path=exp/rohan_vsr_3448/model_avg_10.pth transfer_frontend=false `
   +data.num_workers=2
 
-# AVSR (both arms; frontend paths are constructor-required, discarded on load)
+# AVSR (both arms; frontend paths/root_dir come from rohan_avsr_fixed.yaml)
 python eval.py +experiment=rohan_avsr_fixed exp_dir=exp exp_name=rohan_avsr_3448_static `
   pretrained_model_path=exp/rohan_avsr_3448_static/model_avg_10.pth transfer_frontend=false `
-  pretrained_visual_frontend_path=../module_extractor/frontends/frontend_visual_3448.pth `
-  pretrained_audio_frontend_path=../module_extractor/frontends/frontend_audio_3448.pth `
   +data.num_workers=2
 # repeat with exp_name=rohan_avsr_3448_gated
 
@@ -203,14 +196,25 @@ foreach ($snr in 999999, 10, 5) {
 
 - [x] Code change #1 (extractor `--av`) — done 2026-07-08, tested on synthetic +
       real checkpoint; single-modality path regression-tested.
-- [ ] Code change #2 (`eval.py` ← original; current → `eval_sweep.py`)
-- [ ] Code change #3 (`decode.noise_filename` + white_16k.wav)
-- [ ] Code change #4 (`rohan_avsr_fixed.yaml`)
+- [x] Code change #2 — done 2026-07-08. `eval_sweep.py` holds the sweep/CSV
+      version; `eval.py` is the 1.0.0 original with only the two permitted
+      deviations (PL 2.x Trainer API, "video" modality name). Strict load kept.
+- [x] Code change #3 — done 2026-07-08. `decode.noise_filename` added (null =
+      original babble; train-time noise untouched) and threaded through
+      `data_module.py` → `AudioTransform("test", …)` → `AddNoise`.
+      `noise_datasets/white_16k.wav` created (NoiseX-92 white, 19,980→16,000 Hz,
+      235 s). Smoke-tested at SNR 10 dB.
+- [x] Code change #4 — done 2026-07-08. `configs/experiment/rohan_avsr_fixed.yaml`
+      with fixed root_dir + 3,448h frontend paths baked in; hydra composition
+      verified (40 epochs, 1000 frames, gate_freeze override works, all paths exist).
 - [x] Download AV checkpoint + extract front-ends — done 2026-07-08. MD5 verified
       (6B3C53AE…). `frontend_{visual,audio}_3448.pth` written, 120 tensors each,
       key/shape layout verified IDENTICAL to the known-good trlrs3 frontends
       (strict `transfer_frontend` load guaranteed).
-- [ ] Train ASR → eval (target ≈ 3.9%)
+- [x] Train ASR → eval — done 2026-07-08. **CER 3.87% vs paper 3.88%** (16 kHz,
+      framework (c)) — exact reproduction. 60 epochs in ~1.5 h; best-val at
+      epoch 58 (loss_val 4.160, late-epoch best = healthy, no overfitting);
+      evaluated `model_avg_10.pth` via restored original eval.py.
 - [ ] Train VSR → eval (target ≈ 19.7%; if ≥ ~24%, run the modality-matched
       `vsr_trlrwlrs2lrs3vox2avsp` frontend ablation before touching the crop)
 - [ ] Train AVSR static → eval clean (target ≈ 2.8%)
