@@ -27,6 +27,10 @@ This script performs that conversion: it reads a full checkpoint, keeps only the
 ``frontend.*`` tensors, strips the prefix, and writes a small front-end-only
 checkpoint that ``transfer_frontend`` can load as-is.
 
+Newer single-modality checkpoints (the 3,448 h ``*_trlrwlrs2lrs3vox2avsp``
+files) nest the front-end at ``encoder.frontend.*`` instead of the flat
+``frontend.*`` shown above; ``extract_frontend`` handles both layouts.
+
 Audio-visual checkpoints (``--av``): the AV model stores the visual front-end at
 ``encoder.frontend.*`` and the audio front-end at ``aux_encoder.frontend.*``.
 ``--av --src avsr_trlrwlrs2lrs3vox2avsp_base.pth`` extracts both in one pass and
@@ -69,8 +73,22 @@ def _strip_prefix(state, prefix, ckpt_name):
 
 
 def extract_frontend(ckpt_path: Path):
-    """Return a front-end-only state dict keyed as ``trunk.*`` / ``frontend3D.*``."""
-    return _strip_prefix(_load_state(ckpt_path), "frontend.", ckpt_path.name)
+    """Return a front-end-only state dict keyed as ``trunk.*`` / ``frontend3D.*``.
+
+    Two single-modality layouts exist in the model zoo: the older
+    trlrs3-generation checkpoints keep the front-end flat at the top level
+    (``frontend.*``), while the newer 3,448 h ones nest it inside the encoder
+    module (``encoder.frontend.*``), like the AV checkpoints. Try both.
+    """
+    state = _load_state(ckpt_path)
+    for prefix in ("frontend.", "encoder.frontend."):
+        sub = {k[len(prefix):]: v for k, v in state.items() if k.startswith(prefix)}
+        if sub:
+            return sub
+    raise RuntimeError(
+        f"No 'frontend.*' or 'encoder.frontend.*' keys found in {ckpt_path.name}. "
+        f"Top-level prefixes present: {sorted({k.split('.')[0] for k in state})}"
+    )
 
 
 def extract_av_frontends(ckpt_path: Path):

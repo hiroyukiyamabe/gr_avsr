@@ -136,6 +136,18 @@ python train.py +experiment=rohan_vsr_fixed exp_dir=exp exp_name=rohan_vsr_3448 
   pretrained_model_path=../module_extractor/frontends/frontend_visual_3448.pth `
   data.max_frames=1000 data.max_frames_val=1000 +data.num_workers=2
 
+# 2b) VSR frontend ablation — TRIGGERED 2026-07-09 (AV-frontend VSR = 26.36%,
+#     above the ~24% threshold). Modality-matched VSR checkpoint from the
+#     auto_avsr-1.0.0 zoo (Drive 19GA5SqDjAkI5S88Jt5neJRG-q5RUi5wi, MD5 a896f…,
+#     3,448 h, 20.3% WER). Download + extract from the repo root:
+#       gdown 19GA5SqDjAkI5S88Jt5neJRG-q5RUi5wi -O original_checkpoints\vsr_trlrwlrs2lrs3vox2avsp_base.pth
+#       Get-FileHash -Algorithm MD5 original_checkpoints\vsr_trlrwlrs2lrs3vox2avsp_base.pth  # a896f…
+#       python module_extractor\extractor.py --src vsr_trlrwlrs2lrs3vox2avsp_base.pth --dst frontend_visual_3448_vsr.pth
+#     Then train (identical to run 2 except frontend + exp_name):
+python train.py +experiment=rohan_vsr_fixed exp_dir=exp exp_name=rohan_vsr_3448_vsrfe `
+  pretrained_model_path=../module_extractor/frontends/frontend_visual_3448_vsr.pth `
+  data.max_frames=1000 data.max_frames_val=1000 +data.num_workers=2
+
 # 3) AVSR arm A: STATIC fusion = Tamura reproduction (frozen gate). ~7 h.
 #    (fixed root_dir + 3,448h frontend paths are baked into rohan_avsr_fixed.yaml)
 python train.py +experiment=rohan_avsr_fixed exp_dir=exp exp_name=rohan_avsr_3448_static `
@@ -215,8 +227,14 @@ foreach ($snr in 999999, 10, 5) {
       framework (c)) — exact reproduction. 60 epochs in ~1.5 h; best-val at
       epoch 58 (loss_val 4.160, late-epoch best = healthy, no overfitting);
       evaluated `model_avg_10.pth` via restored original eval.py.
-- [ ] Train VSR → eval (target ≈ 19.7%; if ≥ ~24%, run the modality-matched
+- [x] Train VSR → eval (target ≈ 19.7%; if ≥ ~24%, run the modality-matched
       `vsr_trlrwlrs2lrs3vox2avsp` frontend ablation before touching the crop)
+      - **Rerun (2026-07-09) VALID — CER 26.36%** (`model_avg_10.pth`, fixed
+        dataset confirmed in eval log `auto_avsr/lightning_logs/version_10/hparams.yaml`).
+        Better than the 438 h frontend (27.26%) but the AV-checkpoint frontend
+        alone does NOT close the gap to 19.70% → the ≥ ~24% condition is
+        **TRIGGERED**: run the modality-matched frontend ablation (step 2b below)
+        before touching the crop.
       - **First attempt (2026-07-08) INVALID — 150% CER, not a frontend result.**
         The plan's original VSR command omitted `data.dataset.root_dir`, so the
         run trained AND evaluated on the broken `rohan_preprocessed` videos
@@ -225,6 +243,18 @@ foreach ($snr in 999999, 10, 5) {
         Fix: fixed root_dir is now BAKED INTO `rohan_vsr_fixed.yaml`; commands
         above are correct as written. `exp/rohan_vsr_3448/` from the bad run
         (~33 GB of checkpoints) can be deleted before rerunning.
+- [ ] VSR frontend ablation (step 2b): `rohan_vsr_3448_vsrfe` with the
+      modality-matched `vsr_trlrwlrs2lrs3vox2avsp` visual frontend. Eval as in
+      Phase 2 with `exp_name=rohan_vsr_3448_vsrfe`. If this also lands ≥ ~24%,
+      the frontend hypothesis is exhausted → next suspect is the central crop
+      (accepted deviation #3).
+      - Download + extraction done 2026-07-09 (MD5 a896f… verified). Extractor
+        fix required: new-zoo single-modality checkpoints nest the front-end at
+        `encoder.frontend.*` (not flat `frontend.*` like the trlrs3 files);
+        `extract_frontend` now tries both prefixes (old layout regression-tested).
+        `frontend_visual_3448_vsr.pth` verified: 120 tensors, key/shape layout
+        identical to `frontend_visual_3448.pth`, weights differ (120/120) —
+        strict `transfer_frontend` load guaranteed. Training not yet started.
 - [ ] Train AVSR static → eval clean (target ≈ 2.8%)
 - [ ] Train AVSR gated → eval clean
 - [ ] Table IV white-noise sweep (ASR, AVSR-static, AVSR-gated @ clean/10/5 dB)
