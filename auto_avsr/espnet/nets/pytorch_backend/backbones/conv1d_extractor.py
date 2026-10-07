@@ -11,14 +11,18 @@ from espnet.nets.pytorch_backend.backbones.modules.resnet1d import (
 
 
 class Conv1dResNet(torch.nn.Module):
-    def __init__(self, relu_type="swish", a_upsample_ratio=1):
+    def __init__(self, relu_type="swish", a_upsample_ratio=1, rate_ratio=640):
         super().__init__()
         self.a_upsample_ratio = a_upsample_ratio
+        # Audio samples per output feature (= sample_rate / 25 fps video):
+        # 640 @ 16 kHz (original), 768 @ 19.2 kHz (Kondo & Tamura AVSR setting).
+        self.rate_ratio = rate_ratio
         self.trunk = ResNet1D(
             BasicBlock1D,
             [2, 2, 2, 2],
             relu_type=relu_type,
             a_upsample_ratio=a_upsample_ratio,
+            rate_ratio=rate_ratio,
         )
 
     def forward(self, xs_pad):
@@ -27,7 +31,7 @@ class Conv1dResNet(torch.nn.Module):
         :param xs_pad: torch.Tensor, batch of padded input sequences (B, Tmax, idim)
         """
         B, T, C = xs_pad.size()
-        xs_pad = xs_pad[:, : T // 640 * 640, :]
+        xs_pad = xs_pad[:, : T // self.rate_ratio * self.rate_ratio, :]
         xs_pad = xs_pad.transpose(1, 2)
         xs_pad = self.trunk(xs_pad)
         return xs_pad.transpose(1, 2)

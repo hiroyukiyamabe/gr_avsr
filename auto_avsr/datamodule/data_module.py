@@ -74,6 +74,7 @@ class DataModule(LightningDataModule):
         if snr_levels is not None:
             snr_levels = list(snr_levels)
         noise_prob = self.cfg.data.get("noise_prob", 1.0)
+        rate_ratio = getattr(ds_args, "rate_ratio", 640)
         train_ds = AVDataset(
             root_dir=ds_args.root_dir,
             label_path=os.path.join(
@@ -82,10 +83,13 @@ class DataModule(LightningDataModule):
             subset="train",
             modality=self.cfg.data.modality,
             audio_transform=AudioTransform(
-                "train", snr_levels=snr_levels, noise_prob=noise_prob
+                "train", snr_levels=snr_levels, noise_prob=noise_prob,
+                # audio sample rate = rate_ratio x 25 fps video (640 -> 16 kHz,
+                # 768 -> 19.2 kHz)
+                sample_rate=rate_ratio * 25,
             ),
             video_transform=VideoTransform("train"),
-            rate_ratio=getattr(ds_args, "rate_ratio", 640),
+            rate_ratio=rate_ratio,
         )
         sampler = ByFrameCountSampler(train_ds, self.cfg.data.max_frames)
         if self.total_gpus > 1:
@@ -96,14 +100,15 @@ class DataModule(LightningDataModule):
 
     def val_dataloader(self):
         ds_args = self.cfg.data.dataset
+        rate_ratio = getattr(ds_args, "rate_ratio", 640)
         val_ds = AVDataset(
             root_dir=ds_args.root_dir,
             label_path=os.path.join(ds_args.root_dir, ds_args.label_dir, ds_args.val_file),
             subset="val",
             modality=self.cfg.data.modality,
-            audio_transform=AudioTransform("val"),
+            audio_transform=AudioTransform("val", sample_rate=rate_ratio * 25),
             video_transform=VideoTransform("val"),
-            rate_ratio=getattr(ds_args, "rate_ratio", 640),
+            rate_ratio=rate_ratio,
         )
         sampler = ByFrameCountSampler(
             val_ds, self.cfg.data.max_frames_val, shuffle=False
@@ -114,6 +119,7 @@ class DataModule(LightningDataModule):
 
     def test_dataloader(self):
         ds_args = self.cfg.data.dataset
+        rate_ratio = getattr(ds_args, "rate_ratio", 640)
         dataset = AVDataset(
             root_dir=ds_args.root_dir,
             label_path=os.path.join(ds_args.root_dir, ds_args.label_dir, ds_args.test_file),
@@ -123,9 +129,10 @@ class DataModule(LightningDataModule):
                 "test",
                 snr_target=self.cfg.decode.snr_target,
                 noise_filename=self.cfg.decode.get("noise_filename", None),
+                sample_rate=rate_ratio * 25,
             ),
             video_transform=VideoTransform("test"),
-            rate_ratio=getattr(ds_args, "rate_ratio", 640),
+            rate_ratio=rate_ratio,
         )
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=None)
         return dataloader

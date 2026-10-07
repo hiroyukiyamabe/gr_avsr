@@ -1,0 +1,46 @@
+# @package _global_
+# Japanese AVSR -- cross-lingual transfer, framework (c), PAPER-FAITHFUL AUDIO:
+# 19,200 Hz (= raw 96 kHz / 5) with rate_ratio 768 (= 19200 / 25 fps), matching
+# Kondo & Tamura's AVSR setting (their Table III/IV numbers are 19.2 kHz-only).
+# Video = the preprocessing-fixed 96x96 mouth ROI (our best VSR variant);
+# dataset built by preparation/build_rohan_19k2.py (videos bit-identical to
+# rohan_preprocessed_fixed, audio decimated from the raw 96 kHz corpus).
+#
+# aux_rate_ratio changes only the parameter-free avgpool in the 1D-ResNet audio
+# front-end (total conv stride 32 x pool 24 = 768), so the English 16 kHz
+# front-end still strict-loads. See REPRODUCTION_PLAN.md "Pre-AVSR audio switch".
+#
+# Twin-run arms (only difference between them):
+#   static (Tamura reproduction): model.audiovisual_backbone.fusion_gate_freeze=true
+#   dynamic (gated fusion):       model.audiovisual_backbone.fusion_gate_freeze=false
+#
+# Usage:
+#   python train.py +experiment=rohan_avsr_19k2 exp_dir=exp `
+#     exp_name=rohan_avsr_3448_static `
+#     model.audiovisual_backbone.fusion_gate_freeze=true +data.num_workers=2
+defaults:
+  - override /data/dataset: rohan
+
+data:
+  modality: audiovisual
+  lang: ja
+  max_frames: 1000       # paper: 1,000 frames/batch for AVSR
+  max_frames_val: 1000
+  dataset:
+    root_dir: C:/Users/Hiroyuki/gr_avsr/datasets/rohan_preprocessed_avsr19k2
+    rate_ratio: 768      # 19,200 Hz / 25 fps
+
+model:
+  audiovisual_backbone:
+    aux_rate_ratio: 768  # must match data.dataset.rate_ratio
+
+optimizer:
+  lr: 1e-4
+  warmup_epochs: 5
+
+trainer:
+  max_epochs: 40         # paper: 40 epochs for AVSR
+
+transfer_frontend: true
+pretrained_visual_frontend_path: C:/Users/Hiroyuki/gr_avsr/module_extractor/frontends/frontend_visual_3448.pth
+pretrained_audio_frontend_path: C:/Users/Hiroyuki/gr_avsr/module_extractor/frontends/frontend_audio_3448.pth

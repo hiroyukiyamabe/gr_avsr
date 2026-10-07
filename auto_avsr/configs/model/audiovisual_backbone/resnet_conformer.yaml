@@ -35,6 +35,9 @@ aux_use_cnn_module: True
 aux_cnn_module_kernel: 31
 aux_zero_triu: False
 aux_a_upsample_ratio: 1
+# Audio samples per video frame (sample_rate / 25 fps): 640 @ 16 kHz,
+# 768 @ 19.2 kHz. Must match data.dataset.rate_ratio.
+aux_rate_ratio: 640
 aux_relu_type: swish
 aux_dunits: 3072
 aux_dlayers: 6

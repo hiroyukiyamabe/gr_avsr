@@ -115,6 +115,7 @@ class ResNet1D(nn.Module):
         layers,
         relu_type="swish",
         a_upsample_ratio=1,
+        rate_ratio=640,
     ):
         """__init__.
 
@@ -124,12 +125,19 @@ class ResNet1D(nn.Module):
         :param a_upsample_ratio: int, The ratio related to the \
             temporal resolution of output features of the frontend. \
             a_upsample_ratio=1 produce features with a fps of 25.
+        :param rate_ratio: int, audio samples consumed per output feature \
+            (sample_rate / 25 fps): 640 for 16 kHz, 768 for 19.2 kHz. The \
+            conv trunk's total stride is fixed at 32, so only the (parameter- \
+            free) average pool changes -- pretrained 16 kHz weights still \
+            load strictly.
         """
         super(ResNet1D, self).__init__()
+        assert rate_ratio % 32 == 0, f"rate_ratio must be a multiple of 32, got {rate_ratio}"
         self.inplanes = 64
         self.relu_type = relu_type
         self.downsample_block = downsample_basic_block
         self.a_upsample_ratio = a_upsample_ratio
+        self.rate_ratio = rate_ratio
 
         self.conv1 = nn.Conv1d(
             in_channels=1,
@@ -153,8 +161,8 @@ class ResNet1D(nn.Module):
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
         self.avgpool = nn.AvgPool1d(
-            kernel_size=20 // self.a_upsample_ratio,
-            stride=20 // self.a_upsample_ratio,
+            kernel_size=(self.rate_ratio // 32) // self.a_upsample_ratio,
+            stride=(self.rate_ratio // 32) // self.a_upsample_ratio,
         )
 
     def _make_layer(self, block, planes, blocks, stride=1):

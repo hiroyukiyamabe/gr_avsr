@@ -91,6 +91,7 @@ class Encoder(torch.nn.Module):
         padding_idx=-1,
         relu_type="prelu",
         a_upsample_ratio=1,
+        rate_ratio=640,
     ):
         """Construct an Encoder object."""
         super(Encoder, self).__init__()
@@ -101,7 +102,11 @@ class Encoder(torch.nn.Module):
 
         # -- frontend module.
         if input_layer == "conv1d":
-            self.frontend = Conv1dResNet(relu_type=relu_type, a_upsample_ratio=a_upsample_ratio)
+            self.frontend = Conv1dResNet(
+                relu_type=relu_type,
+                a_upsample_ratio=a_upsample_ratio,
+                rate_ratio=rate_ratio,
+            )
         elif input_layer == "conv3d":
             self.frontend = Conv3dResNet(relu_type=relu_type)
         else:

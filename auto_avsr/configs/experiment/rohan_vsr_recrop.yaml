@@ -1,0 +1,34 @@
+# @package _global_
+# Japanese VSR -- recrop v2: identical to rohan_vsr_fixed but on the
+# mouth-centred re-normalisation (crop-audit follow-up, 2026-07-10).
+#
+# Dataset: normalize_rohan_video.py --central 234 --center-x 147 --center-y 133
+# (mouth-centred static box; closes the audited 8px-high offset and 1.17x zoom
+# vs the auto_avsr canonical mouth scale). 25 fps / 96x96 as before.
+#
+# The dataset root is BAKED IN below (never rely on a CLI override for data
+# identity -- see REPRODUCTION_PLAN.md incident log 2026-07-08).
+#
+# Usage:
+#   python train.py +experiment=rohan_vsr_recrop \
+#       exp_dir=exp exp_name=rohan_vsr_3448_recrop \
+#       pretrained_model_path=../module_extractor/frontends/frontend_visual_3448.pth
+defaults:
+  - override /data/dataset: rohan
+
+data:
+  modality: video
+  lang: ja
+  max_frames: 1600
+  max_frames_val: 1600
+  dataset:
+    root_dir: C:/Users/Hiroyuki/gr_avsr/datasets/rohan_preprocessed_recrop
+
+optimizer:
+  lr: 1e-4
+  warmup_epochs: 5
+
+trainer:
+  max_epochs: 60
+
+transfer_frontend: true

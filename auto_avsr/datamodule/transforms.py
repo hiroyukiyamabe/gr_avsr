@@ -103,6 +103,7 @@ class AddNoise(torch.nn.Module):
         snr_target=None,
         snr_levels=None,
         noise_prob=1.0,
+        sample_rate=16000,
     ):
         super().__init__()
         # Precedence: an explicit ``snr_target`` (used at eval time to pin a
@@ -118,9 +119,14 @@ class AddNoise(torch.nn.Module):
         # ``noise_prob < 1`` the remaining utterances are passed through clean.
         self.noise_prob = noise_prob
         # torchaudio >= 2.9 routes load() through torchcodec; read via soundfile.
-        data, sample_rate = sf.read(noise_filename, dtype="float32", always_2d=True)
-        self.noise = torch.from_numpy(np.ascontiguousarray(data.T))  # channels x frames
-        assert sample_rate == 16000
+        data, noise_sr = sf.read(noise_filename, dtype="float32", always_2d=True)
+        noise = torch.from_numpy(np.ascontiguousarray(data.T))  # channels x frames
+        # Resample the noise to the speech sample rate once at construction
+        # (noise files are shipped at 16 kHz; the 19.2 kHz AVSR setting needs
+        # them stretched to match).
+        if noise_sr != sample_rate:
+            noise = torchaudio.functional.resample(noise, noise_sr, sample_rate)
+        self.noise = noise
 
     def forward(self, speech):
         # speech: T x 1
@@ -161,22 +167,26 @@ class VideoTransform:
 
 class AudioTransform:
     def __init__(self, subset, snr_target=None, snr_levels=None, noise_prob=1.0,
-                 noise_filename=None):
+                 noise_filename=None, sample_rate=16000):
         # ``noise_filename`` only affects eval-time noise (decode.noise_filename,
         # e.g. white noise for the Kondo & Tamura Table IV replica). Training
         # augmentation keeps the original babble noise regardless.
+        # ``sample_rate`` (= dataset rate_ratio x 25 fps) keeps the time mask
+        # the same 0.4 s and the noise segments time-aligned at 19.2 kHz.
         if subset == "train":
             self.audio_pipeline = torch.nn.Sequential(
-                AdaptiveTimeMask(6400, 16000),
+                AdaptiveTimeMask(sample_rate * 2 // 5, sample_rate),
                 # Randomly noise each utterance at one of ``snr_levels`` (dB),
                 # applied with probability ``noise_prob``.
-                AddNoise(snr_levels=snr_levels, noise_prob=noise_prob),
+                AddNoise(snr_levels=snr_levels, noise_prob=noise_prob,
+                         sample_rate=sample_rate),
                 FunctionalModule(_instance_layer_norm),
             )
         elif subset == "val" or subset == "test":
             self.audio_pipeline = torch.nn.Sequential(
                 AddNoise(snr_target=snr_target,
-                         noise_filename=noise_filename or NOISE_FILENAME)
+                         noise_filename=noise_filename or NOISE_FILENAME,
+                         sample_rate=sample_rate)
                 if snr_target is not None
                 else FunctionalModule(_identity),
                 FunctionalModule(_instance_layer_norm),

@@ -42,6 +42,12 @@ class E2E(torch.nn.Module):
             relu_type=getattr(args, "relu_type", "swish"),
         )
 
+        # Audio samples per video frame (sample_rate / 25 fps): 640 @ 16 kHz,
+        # 768 @ 19.2 kHz (the paper's AVSR setting). Changes only the
+        # parameter-free avgpool inside the 1D-ResNet frontend, so pretrained
+        # 16 kHz front-end weights still strict-load.
+        self.aux_rate_ratio = getattr(args, "aux_rate_ratio", 640)
+
         self.aux_encoder = Encoder(
             attention_dim=args.aux_adim,
             attention_heads=args.aux_aheads,
@@ -58,6 +64,7 @@ class E2E(torch.nn.Module):
             zero_triu=getattr(args, "aux_zero_triu", False),
             a_upsample_ratio=args.aux_a_upsample_ratio,
             relu_type=getattr(args, "aux_relu_type", "swish"),
+            rate_ratio=self.aux_rate_ratio,
         )
 
         self.transformer_input_layer = args.transformer_input_layer
@@ -148,7 +155,7 @@ class E2E(torch.nn.Module):
         video_padding_mask = make_non_pad_mask(video_lengths).to(video.device).unsqueeze(-2)
         video_feat, _ = self.encoder(video, video_padding_mask)
 
-        audio_lengths = torch.div(audio_lengths, 640, rounding_mode="trunc")
+        audio_lengths = torch.div(audio_lengths, self.aux_rate_ratio, rounding_mode="trunc")
         audio_padding_mask = make_non_pad_mask(audio_lengths).to(video.device).unsqueeze(-2)
 
         audio_feat, _ = self.aux_encoder(audio, audio_padding_mask)

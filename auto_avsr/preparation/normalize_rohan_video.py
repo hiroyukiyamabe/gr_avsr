@@ -64,13 +64,18 @@ def resample_indices(n_src, src_fps, target_fps):
     return [min(n_src - 1, int(round(k * src_fps / target_fps))) for k in range(n_dst)]
 
 
-def normalize_frames(vid_thwc, central, mouth_size):
-    """Centre-crop each frame to ``central`` px then resize to ``mouth_size`` px.
+def normalize_frames(vid_thwc, central, mouth_size, center=None):
+    """Crop a ``central``-px box from each frame then resize to ``mouth_size`` px.
 
-    Input/-output are uint8 RGB. rtype: uint8 T x mouth_size x mouth_size x C.
+    ``center`` is the (x, y) box centre in source pixels; ``None`` keeps the
+    original frame-centred behaviour. The box is clamped to stay inside the
+    frame. Input/output are uint8 RGB. rtype: uint8 T x mouth_size x mouth_size x C.
     """
-    x = vid_thwc.permute(0, 3, 1, 2)  # T,C,H,W uint8
-    x = torchvision.transforms.CenterCrop(central)(x)
+    h, w = int(vid_thwc.shape[1]), int(vid_thwc.shape[2])
+    cx, cy = (w / 2.0, h / 2.0) if center is None else center
+    x0 = int(round(min(max(cx - central / 2.0, 0), w - central)))
+    y0 = int(round(min(max(cy - central / 2.0, 0), h - central)))
+    x = vid_thwc[:, y0:y0 + central, x0:x0 + central, :].permute(0, 3, 1, 2)  # T,C,H,W
     x = torchvision.transforms.Resize(
         mouth_size, antialias=True,
         interpolation=torchvision.transforms.InterpolationMode.BILINEAR,
@@ -102,7 +107,11 @@ def process_split(csv_path, src_root, dst_root, dst_seg, args):
         vid, src_fps = load_video_thwc(src_mp4)
         idx = resample_indices(len(vid), src_fps, args.target_fps)
         vid = vid[idx]                                   # temporal resample
-        vid = normalize_frames(vid, args.central, args.mouth_size)  # spatial
+        center = None
+        if args.center_x is not None or args.center_y is not None:
+            center = (args.center_x if args.center_x is not None else vid.shape[2] / 2.0,
+                      args.center_y if args.center_y is not None else vid.shape[1] / 2.0)
+        vid = normalize_frames(vid, args.central, args.mouth_size, center)  # spatial
 
         dst_mp4 = os.path.join(dst_seg, os.path.basename(rel_path))
         encode_video(dst_mp4, vid, args.target_fps)
@@ -126,6 +135,11 @@ def main():
     ap.add_argument("--target-fps", type=float, default=25.0)
     ap.add_argument("--central", type=int, default=200,
                     help="centre-crop size (px) applied to the source ROI before resize")
+    ap.add_argument("--center-x", type=float, default=None,
+                    help="crop-box centre x in source px (default: frame centre). "
+                         "Set with --center-y for a mouth-centred static crop.")
+    ap.add_argument("--center-y", type=float, default=None,
+                    help="crop-box centre y in source px (default: frame centre).")
     ap.add_argument("--mouth-size", type=int, default=96,
                     help="output frame size (px); CenterCrop(88) trims it downstream")
     ap.add_argument("--limit-csv", default=None,
@@ -144,7 +158,8 @@ def main():
     if args.limit_csv:
         csvs = [c for c in csvs if os.path.basename(c) == args.limit_csv]
     print(f"[info] normalising {len(csvs)} split(s): "
-          f"fps->{args.target_fps}, central {args.central}px -> {args.mouth_size}px", flush=True)
+          f"fps->{args.target_fps}, central {args.central}px -> {args.mouth_size}px, "
+          f"box centre ({args.center_x}, {args.center_y})", flush=True)
     for csv_path in csvs:
         rows = process_split(csv_path, args.src, args.dst, dst_seg, args)
         out_csv = os.path.join(dst_labels, os.path.basename(csv_path))

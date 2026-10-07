@@ -1,0 +1,39 @@
+# @package _global_
+# Japanese VSR -- "paper-prep" reproduction run: video preprocessing exactly as
+# Kondo & Tamura SIGUL 2024 §3.3 (the pipeline that produced the 19.70% CER
+# carried into APSIPA 2025 Table III): WHOLE-FRAME 300x300 -> 96x96 resize
+# (no mouth crop), 25 fps. Trains with the paper's max_frames=1600.
+#
+# Dataset built with:
+#   normalize_rohan_video.py --central 300 --mouth-size 96 --target-fps 25
+#   (central 300 on a 300px frame = no crop, pure resize)
+#
+# Frontend for fidelity: the English VSR checkpoint's front-end
+# (frontend_visual_3448_vsr.pth), matching SIGUL's source model.
+#
+# The dataset root is BAKED IN below (never rely on a CLI override for data
+# identity -- see incident log 2026-07-08).
+#
+# Usage:
+#   python train.py +experiment=rohan_vsr_paper \
+#       exp_dir=exp exp_name=rohan_vsr_3448_paper \
+#       pretrained_model_path=../module_extractor/frontends/frontend_visual_3448_vsr.pth
+defaults:
+  - override /data/dataset: rohan
+
+data:
+  modality: video
+  lang: ja
+  max_frames: 1600
+  max_frames_val: 1600
+  dataset:
+    root_dir: C:/Users/Hiroyuki/gr_avsr/datasets/rohan_preprocessed_paper
+
+optimizer:
+  lr: 1e-4
+  warmup_epochs: 5
+
+trainer:
+  max_epochs: 60
+
+transfer_frontend: true
