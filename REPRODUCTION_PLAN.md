@@ -516,6 +516,33 @@ foreach ($snr in 999999, 10, 5) {
         itself, not the gate. See memory noise-sensitive-fusion for the full
         interpretation + future-work directions. ASR white-noise rows remain
         (last pending item before write-up).
+- [x] Extended white-noise sweep, both AVSR arms (2026-10-08) — existing
+      `model_avg_10.pth` checkpoints, 8 levels (clean, 20, 15, 10, 5, 0, −5,
+      −10 dB), same eval spec as Table IV but via `eval_sweep.py`:
+      ```powershell
+      foreach ($exp in "rohan_avsr_3448_static", "rohan_avsr_3448_gated") {
+        foreach ($snr in 999999, 20, 15, 10, 5, 0, -5, -10) {
+          python eval_sweep.py +experiment=rohan_avsr_fixed exp_dir=exp exp_name=$exp `
+            pretrained_model_path=exp/$exp/model_avg_10.pth transfer_frontend=false `
+            +data.num_workers=2 decode.snr_target=$snr `
+            decode.noise_filename=../noise_datasets/white_16k.wav
+        }
+      }
+      ```
+      All 16 evals validated in logged hparams (static version_22–29, gated
+      version_30–37: right ckpt, SNR, white noise, fixed dataset). ~12 min/eval.
+      **Result:** static 3.13/5.60/7.91/10.48/15.77/23.21/30.08/32.57, gated
+      3.52/5.36/7.37/10.73/16.14/24.10/29.94/32.04 (gate_w_audio 0.537 →
+      0.346). No gated benefit at any level (winner alternates 4–4, mean Δ
+      +0.06 pt); both arms are worse than VSR (26.36) below ~0 dB. Full table +
+      interpretation: RESULTS.md §2.1.
+      - **Caveat found: eval noise is unseeded.** `AddNoise` picks a random
+        per-utterance offset into the noise file; same checkpoint re-evaluated
+        gives static 10 dB 10.79 (July) vs 10.48 (Oct). Clean is exactly
+        repeatable. The 10 dB twin verdict flipped between the two evals →
+        sub-0.5 pt twin gaps are not interpretable. TODO before any new twin
+        comparison: seed the noise offset per utterance ID, re-run, report
+        paired bootstrap intervals.
 - [ ] Write up: reproduction table + static-vs-gated comparison
 
 ---

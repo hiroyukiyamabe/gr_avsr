@@ -1,7 +1,8 @@
 # Results: Tamura Reproduction + Dynamic-Fusion Study
 
-Final numbers as of 2026-07-12. Reproduction target: Kondo & Tamura, "Audio-Visual
-Speech Recognition Based on Cross-Lingual Transfer Learning" (APSIPA ASC 2025),
+Final numbers as of 2026-07-12 (extended SNR sweep added 2026-10-08, §2.1).
+Reproduction target: Kondo & Tamura, "Audio-Visual Speech Recognition Based on
+Cross-Lingual Transfer Learning" (APSIPA ASC 2025),
 framework (c) — English front-ends from the 3,448 h Auto-AVSR checkpoints,
 fine-tuned; everything else trained from scratch on Japanese ROHAN4600 data.
 All CER in % on our 400-sentence test split, `model_avg_10.pth` checkpoints,
@@ -49,7 +50,59 @@ recognition ties at 10 dB (Δ0.09) and static wins clean (+0.39) and 5 dB
 robust; stationary white noise gives per-frame gating nothing temporal to
 exploit; and even 5 dB audio out-informs clean video (AVSR 15.7 vs VSR 26.4),
 so down-weighting audio has a price. **Future work:** non-stationary noise
-(held-out babble), SNR ≤ 0 dB, utterance-level gating.
+(held-out babble), utterance-level gating. (SNR ≤ 0 dB: done, §2.1.)
+
+### 2.1 Extended white-noise sweep (2026-10-08): clean → −10 dB
+
+Same two `model_avg_10.pth` checkpoints, same eval settings as above
+(`rohan_avsr_fixed`, 16 kHz, NoiseX-92 white via `eval_sweep.py`), extended to
+eight levels. CSVs: `auto_avsr/exp/snr_sweep_rohan_avsr_3448_{static,gated}.csv`;
+plot: `auto_avsr/exp/snr_sweep_white_8lvl.png`; log:
+`auto_avsr/exp/white_sweep_8lvl.log`.
+
+| SNR (white) | AVSR static | AVSR gated | Δ (gated − static) | gate_w_audio (gated) |
+|---|---:|---:|---:|---:|
+| clean | **3.13** | 3.52 | +0.39 | 0.537 |
+| 20 dB | 5.60 | **5.36** | −0.24 | 0.538 |
+| 15 dB | 7.91 | **7.37** | −0.54 | 0.522 |
+| 10 dB | **10.48** | 10.73 | +0.25 | 0.489 |
+| 5 dB | **15.77** | 16.14 | +0.37 | 0.443 |
+| 0 dB | **23.21** | 24.10 | +0.89 | 0.392 |
+| −5 dB | 30.08 | **29.94** | −0.14 | 0.359 |
+| −10 dB | 32.57 | **32.04** | −0.53 | 0.346 |
+
+Reference: VSR (video only) 26.36 %.
+
+**Findings.**
+
+1. **Still no gated benefit at low SNR.** The winner alternates 4–4 across
+   the eight levels; the mean Δ is +0.06 pt. The largest gap (static +0.89 at
+   0 dB) is a single level, unreplicated.
+2. **Eval noise is not seeded.** `AddNoise` draws a random offset into the
+   noise file per utterance, so re-evaluating the same checkpoint changes
+   noisy CERs: static 10 dB 10.79 → 10.48, 5 dB 15.73 → 15.77. Clean is
+   bit-for-bit repeatable (3.13 / 3.52, gate 0.537), confirming the noise
+   draw is the only eval-side randomness. At 10 dB the twin verdict *flipped*
+   between July (gated ahead by 0.09) and October (static ahead by 0.25):
+   gaps of ≲ 0.5 pt are not interpretable. Training-run variance (one seed
+   per arm) is unmeasured and also affects clean.
+3. **Fusion is worse than video alone below ~0 dB.** Both arms cross the VSR
+   level (26.36 %) between 0 and −5 dB and plateau near 32 % at −10 dB: a
+   ~6 pt "fallback gap" that neither fusion recovers.
+4. **The gate detects but cannot act.** Its audio weight keeps falling with
+   SNR but saturates near 0.35 (audio still enters at 2 × 0.35 = 0.7× scale).
+   Likely causes, from the architecture: the gate sees the same inputs as the
+   fusion MLP (no new information); scaling shrinks noisy features but does
+   not remove them; the fusion MLP is the last stage before CTC and the
+   decoder, so there is no video-only path around it; and training (babble,
+   −5…20 dB, audio always present) never rewarded relying on video alone.
+   The last point is a hypothesis; a forced-weight eval (pin w_a = 0 at
+   −10 dB) would test it.
+
+**Implications for follow-up work:** seed the eval noise per utterance ID so
+both arms see identical noise, then report paired bootstrap intervals; a
+reliability-gated *visual-only* path (cf. router-gated cross-attention,
+arXiv 2508.18734) or modality dropout targets the fallback gap directly.
 
 ## 3. VSR ablations (why the 26.4 vs 19.7 gap is the video data)
 
@@ -79,6 +132,8 @@ the crop; batch 1201–1600's landmark CSVs are broken, videos fine).
 | VSR canonical / vsr-fe / recrop / paper-prep | version_31 / 32 / 33 / 36 | version_10 / 11 / 12 / 13 |
 | AVSR static clean / 10 dB / 5 dB | version_41 | version_14 / 18 / 19 |
 | AVSR gated clean / 10 dB / 5 dB | version_42 | version_15 / 16 / 17 |
+| AVSR static 8-level sweep (clean, 20 … −10 dB) | version_41 | version_22 – 29 |
+| AVSR gated 8-level sweep (clean, 20 … −10 dB) | version_42 | version_30 – 37 |
 
 ## 5. Documented deviations from the paper
 
