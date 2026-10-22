@@ -3,6 +3,12 @@
 > **Final results tables: see `RESULTS.md`** (complete reproduction table,
 > Table IV replica, twin-study verdict, VSR ablations, run provenance,
 > documented deviations). This file remains the experimental log.
+>
+> **Status (2026-10-22): every experiment below is finished.** The only open
+> items are (1) seeding the eval noise per utterance ID before any new twin
+> comparison (see the 2026-10-08 sweep entry) and (2) the write-up. The log is
+> chronological: earlier entries contain plans and "pending" notes that later
+> entries resolve — read each checklist item to its end before acting on it.
 
 **Goal.** Reproduce Kondo & Tamura (APSIPA ASC 2025) framework (c) — cross-lingual
 transfer, all three modalities — on our own ROHAN recordings, using front-ends
@@ -321,7 +327,7 @@ foreach ($snr in 999999, 10, 5) {
       - Remaining explanations for the ~7pt VSR gap, in likely order: own
         recordings (speaker/style/quality), nearest-frame 30->25 fps resample
         judder, small geometry delta, paper-side unknowns.
-- [ ] Recrop v2 VSR (decided 2026-07-10): close the audited geometry delta
+- [x] Recrop v2 VSR (decided 2026-07-10; DONE 2026-07-11, CER 26.50%): close the audited geometry delta
       exactly and retrain once with the canonical AV frontend (same as the
       26.36% run, for a clean crop-only comparison).
       - `normalize_rohan_video.py` gained `--center-x/--center-y` (clamped
@@ -367,7 +373,7 @@ foreach ($snr in 999999, 10, 5) {
         `frontend_visual_3448_vsr.pth` verified: 120 tensors, key/shape layout
         identical to `frontend_visual_3448.pth`, weights differ (120/120) —
         strict `transfer_frontend` load guaranteed. Training not yet started.
-- [ ] VSR "paper-prep" run (`rohan_vsr_3448_paper`): whole-frame 300→96 dataset
+- [x] VSR "paper-prep" run (DONE 2026-07-12, CER 28.04%) (`rohan_vsr_3448_paper`): whole-frame 300→96 dataset
       (`rohan_preprocessed_paper`, normalize --central 300), paper
       max_frames=1600, VSR-checkpoint frontend (`frontend_visual_3448_vsr.pth`
       — SIGUL's source model). Config `rohan_vsr_paper.yaml` created +
@@ -407,7 +413,8 @@ foreach ($snr in 999999, 10, 5) {
       - Per the pre-registered rule: **AVSR arms proceed on
         rohan_preprocessed_fixed** (our best-performing video prep) + the
         19.2 kHz audio switch.
-- [ ] Pre-AVSR audio switch to 19,200 Hz (paper-faithful; do AFTER the VSR
+- [x] (CLOSED 2026-07-12: implemented, then REVERTED for the arms — VRAM; AVSR runs at 16 kHz)
+      Pre-AVSR audio switch to 19,200 Hz (paper-faithful; do AFTER the VSR
       paper-prep run settles the video prep, BEFORE the AVSR arms):
       **Implemented 2026-07-12** (all sub-items below, plus one the original
       list missed): the 1D-ResNet audio front-end hardcodes 640 samples/frame
@@ -543,6 +550,9 @@ foreach ($snr in 999999, 10, 5) {
         sub-0.5 pt twin gaps are not interpretable. TODO before any new twin
         comparison: seed the noise offset per utterance ID, re-run, report
         paired bootstrap intervals.
+- [ ] Seed eval noise per utterance ID (`AddNoise.forward` in
+      `auto_avsr/datamodule/transforms.py` uses an unseeded `random.randint`
+      offset), re-run the sweep for both arms, report paired bootstrap intervals.
 - [ ] Write up: reproduction table + static-vs-gated comparison
 
 ---

@@ -3,10 +3,12 @@
 Baseline implementation of Kondo & Tamura, *"Audio-Visual Speech Recognition
 Based on Cross-Lingual Transfer Learning"* (APSIPA ASC 2025) on top of Auto-AVSR.
 
-> **See also:** [`PIPELINE.md`](PIPELINE.md) — copy-paste command reference for
-> the full train/eval pipeline. [`../SYSTEM_STATUS.md`](../SYSTEM_STATUS.md) —
-> software environment, code modifications, and the open hardware-stability
-> issue (run with `+data.num_workers=0` until that is fixed).
+> **⚠ Legacy (June 2026; note added 2026-10-22).** Method, tokenizer, corpus
+> layout and label-CSV sections are still accurate. Train/eval commands point
+> at the broken `rohan_preprocessed` dataset and old front-ends; use
+> [`../REPRODUCTION_PLAN.md`](../REPRODUCTION_PLAN.md) for current commands and
+> [`../RESULTS.md`](../RESULTS.md) for results. The hardware issue mentioned in
+> older notes was resolved 2026-06-29 (`num_workers=0` no longer required).
 
 **Idea (framework (c) in the paper):** inherit the **front-end encoders** from
 high-performance English checkpoints and **fine-tune** them on a small Japanese

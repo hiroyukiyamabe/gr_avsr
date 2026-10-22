@@ -36,6 +36,11 @@ degradation asymmetry also reproduces: AVSR +4.9 pt vs ASR +17.3 pt (paper:
 Twin runs identical in every respect (16 kHz, `max_frames` 800, 40 epochs,
 3,448 h AV front-ends) except `fusion_gate_freeze`.
 
+Noisy numbers in this table are the July 2026 evals (`eval.py`). The October
+re-eval of the same checkpoints (§2.1) gives slightly different noisy CERs
+because eval noise is unseeded — the 10 dB winner flips. Read both tables
+together; neither set of sub-0.5 pt gaps is significant.
+
 | Condition | AVSR static (frozen gate) | AVSR gated | gate_w_audio (gated) |
 |---|---:|---:|---:|
 | clean | **3.13** | 3.52 | 0.537 |
@@ -58,7 +63,36 @@ Same two `model_avg_10.pth` checkpoints, same eval settings as above
 (`rohan_avsr_fixed`, 16 kHz, NoiseX-92 white via `eval_sweep.py`), extended to
 eight levels. CSVs: `auto_avsr/exp/snr_sweep_rohan_avsr_3448_{static,gated}.csv`;
 plot: `auto_avsr/exp/snr_sweep_white_8lvl.png`; log:
-`auto_avsr/exp/white_sweep_8lvl.log`.
+`auto_avsr/exp/white_sweep_8lvl.log` (all 16 evals, each delimited by
+`=== <timestamp> <exp> snr=<snr> ===` / `=== exit <code> ===`; the
+`NativeCommandError` "triton not found" lines are benign stderr).
+CSV columns: `snr_target` (999999 = clean), `cer` (fraction, ×100 for %),
+`gate_w_audio` (audio gate weight averaged over all test-set frames, `lightning_av.py`;
+0.5 = frozen gate).
+
+To reproduce (PowerShell, from `auto_avsr\`, venv active; ~12 min/eval,
+~3.2 h total). `eval_sweep.py` **appends** to `exp/snr_sweep_<exp_name>.csv`,
+so rename the existing CSVs first:
+
+```powershell
+$env:PYTHONIOENCODING = "utf-8"
+$log = "exp\white_sweep_8lvl.log"
+foreach ($exp in "rohan_avsr_3448_static", "rohan_avsr_3448_gated") {
+  foreach ($snr in 999999, 20, 15, 10, 5, 0, -5, -10) {
+    "=== $(Get-Date -Format s) $exp snr=$snr ===" | Out-File -Append -Encoding utf8 $log
+    python eval_sweep.py +experiment=rohan_avsr_fixed exp_dir=exp exp_name=$exp `
+      pretrained_model_path=exp/$exp/model_avg_10.pth transfer_frontend=false `
+      +data.num_workers=2 decode.snr_target=$snr `
+      decode.noise_filename=../noise_datasets/white_16k.wav *>> $log
+    "=== exit $LASTEXITCODE ===" | Out-File -Append -Encoding utf8 $log
+  }
+}
+python plot_snr_sweep.py --baseline exp/snr_sweep_rohan_avsr_3448_static.csv `
+  --gated exp/snr_sweep_rohan_avsr_3448_gated.csv --out exp/snr_sweep_white_8lvl.png
+```
+
+Expect noisy CERs to differ by a few tenths from the table (unseeded noise,
+finding 2); clean must reproduce exactly (3.13 / 3.52).
 
 | SNR (white) | AVSR static | AVSR gated | Δ (gated − static) | gate_w_audio (gated) |
 |---|---:|---:|---:|---:|
@@ -125,6 +159,11 @@ corpus's own landmark audit confirms our framing is sound (mouth always inside
 the crop; batch 1201–1600's landmark CSVs are broken, videos fine).
 
 ## 4. Run provenance (all validated in logged hparams)
+
+Train log = `auto_avsr/exp/lightning_logs/version_N/`; eval log =
+`auto_avsr/lightning_logs/version_N/`. Version numbers overlap between the two
+dirs (e.g. train version_31 ≠ eval version_31). Each `hparams.yaml` records the
+checkpoint, dataset root, `snr_target` and `noise_filename` actually used.
 
 | Result | Train log | Eval log |
 |---|---|---|

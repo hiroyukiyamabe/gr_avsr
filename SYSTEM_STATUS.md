@@ -2,6 +2,12 @@
 
 _Last updated: 2026-06-29_
 
+> **⚠ Partly superseded (note added 2026-10-22).** §2–§5 (environment, code
+> modifications, hardware incidents) are still valid. The "4.2 % CER" milestone
+> below is **obsolete**: that model was trained on the broken
+> `rohan_preprocessed` video. Current results: [`RESULTS.md`](RESULTS.md);
+> current commands: [`REPRODUCTION_PLAN.md`](REPRODUCTION_PLAN.md).
+
 Brief documentation of the current state of the Japanese AVSR project: the
 software environment, the modifications made to run on the modern stack, and a
 hardware-stability issue diagnosed on 2026-06-27 (resolved).

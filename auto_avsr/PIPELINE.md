@@ -1,5 +1,13 @@
 # Japanese AVSR Pipeline — Command Reference
 
+> **⚠ Legacy (June 2026) — do not copy commands verbatim (note added 2026-10-22).**
+> Commands below train on `datasets/rohan_preprocessed` (broken video:
+> un-cropped 300 px, ~30 fps) with the 438 h `trlrs3` front-ends. Current runs
+> use `rohan_preprocessed_fixed`, the 3,448 h front-ends, and the `*_fixed`
+> experiment configs — see [`../REPRODUCTION_PLAN.md`](../REPRODUCTION_PLAN.md)
+> (commands) and [`../RESULTS.md`](../RESULTS.md) (numbers). Still useful here:
+> Hydra override tips, the detached long-run recipe (§3), and the config map.
+
 Cross-lingual transfer fine-tuning (Auto-AVSR baseline, framework (c)): inherit
 English front-ends, train Conformer back-ends + decoder from scratch on the
 Japanese ROHAN4600 corpus (character-level Katakana, ~87 units).
