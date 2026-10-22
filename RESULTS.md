@@ -1,6 +1,7 @@
 # Results: Tamura Reproduction + Dynamic-Fusion Study
 
-Final numbers as of 2026-07-12 (extended SNR sweep added 2026-10-08, §2.1).
+Final numbers as of 2026-07-12 (extended SNR sweep added 2026-10-08, §2.1;
+ASR/VSR under the same sweep 2026-10-22, §2.2).
 Reproduction target: Kondo & Tamura, "Audio-Visual Speech Recognition Based on
 Cross-Lingual Transfer Learning" (APSIPA ASC 2025),
 framework (c) — English front-ends from the 3,448 h Auto-AVSR checkpoints,
@@ -138,6 +139,53 @@ both arms see identical noise, then report paired bootstrap intervals; a
 reliability-gated *visual-only* path (cf. router-gated cross-attention,
 arXiv 2508.18734) or modality dropout targets the fallback gap directly.
 
+### 2.2 Single-modality references under the same sweep (2026-10-22)
+
+ASR and VSR `model_avg_10.pth` checkpoints (`rohan_asr_3448`,
+`rohan_vsr_3448`) evaluated under the same eight white-noise levels and eval
+settings as §2.1 (`eval_sweep.py`, `white_16k.wav`, fixed dataset). CSVs:
+`auto_avsr/exp/snr_sweep_rohan_{asr,vsr}_3448.csv`; combined plot (all four
+branches): `auto_avsr/exp/snr_sweep_white_8lvl_all.png`; log:
+`auto_avsr/exp/unimodal_sweep_8lvl.log`. AVSR columns are from §2.1.
+
+| SNR (white) | ASR | VSR | AVSR static | AVSR gated | static − best single | ASR → AVSR static (rel.) |
+|---|---:|---:|---:|---:|---:|---:|
+| clean | 3.87 | 26.36 | **3.13** | 3.52 | −0.74 | −19 % |
+| 20 dB | 9.78 | 26.36 | 5.60 | **5.36** | −4.18 | −43 % |
+| 15 dB | 15.99 | 26.36 | 7.91 | **7.37** | −8.08 | −51 % |
+| 10 dB | 26.01 | 26.36 | **10.48** | 10.73 | −15.53 | −60 % |
+| 5 dB | 43.15 | 26.36 | **15.77** | 16.14 | −10.59 | −63 % |
+| 0 dB | 73.89 | 26.36 | **23.21** | 24.10 | −3.15 | −69 % |
+| −5 dB | 91.36 | **26.36** | 30.08 | 29.94 | +3.72 | −67 % |
+| −10 dB | 95.60 | **26.36** | 32.57 | 32.04 | +6.21 | −66 % |
+
+"Best single" = min(ASR, VSR) at that level; negative = fusion beats both
+single-modality systems.
+
+**Findings.**
+
+1. **VSR is noise-invariant, now measured.** It scores 26.36 % at all eight
+   levels, bit-identical. This is expected: the eval noise is added to audio
+   only, and the video-only dataset path never loads audio
+   (`datamodule/av_dataset.py`). The VSR line is a fixed reference.
+2. **ASR collapses, crossing VSR at ~10 dB.** 3.87 → 95.60 %. At 10 dB, ASR
+   (26.01) and VSR (26.36) tie; below that, audio alone is worse than video
+   alone.
+3. **Fusion beats both modalities from clean to 0 dB.** The largest gain over
+   the better single modality is at 10 dB (−15.5 pt), exactly where the two
+   single-modality systems tie, the classic complementarity point. AVSR
+   crosses the VSR line between 0 and −5 dB, about 10 dB lower than ASR does.
+4. **Below 0 dB, fusion is worse than video alone (fallback gap).** At
+   −10 dB the audio stream is nearly uninformative (ASR 95.6 %), yet AVSR
+   static is 6.2 pt worse than VSR. The gate recovers only 0.5 pt of that
+   (gated 32.04). A reliability-aware fusion should do no worse than the
+   better single modality, and both arms fail this below 0 dB. This confirms
+   §2.1 finding 3 against the paired VSR eval. The relative ASR→AVSR gain
+   flattens at −5/−10 dB only because ASR is saturating near 100 %.
+5. **ASR rows of §1 hold.** Clean is bit-identical (3.87). The noisy re-evals
+   (10 dB 26.09 → 26.01, 5 dB 43.42 → 43.15) are within the unseeded-noise
+   spread noted in §2.1.
+
 ## 3. VSR ablations (why the 26.4 vs 19.7 gap is the video data)
 
 | Variant | Frontend | Framing (mouth width in 96 px) | CER |
@@ -173,6 +221,8 @@ checkpoint, dataset root, `snr_target` and `noise_filename` actually used.
 | AVSR gated clean / 10 dB / 5 dB | version_42 | version_15 / 16 / 17 |
 | AVSR static 8-level sweep (clean, 20 … −10 dB) | version_41 | version_22 – 29 |
 | AVSR gated 8-level sweep (clean, 20 … −10 dB) | version_42 | version_30 – 37 |
+| ASR 8-level sweep (clean, 20 … −10 dB) | (2026-07-08 run) | version_38 – 45 |
+| VSR 8-level sweep (clean, 20 … −10 dB) | version_31 | version_46 – 53 |
 
 ## 5. Documented deviations from the paper
 

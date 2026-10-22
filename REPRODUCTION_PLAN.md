@@ -550,6 +550,29 @@ foreach ($snr in 999999, 10, 5) {
         sub-0.5 pt twin gaps are not interpretable. TODO before any new twin
         comparison: seed the noise offset per utterance ID, re-run, report
         paired bootstrap intervals.
+- [x] ASR + VSR under the same 8-level white sweep (2026-10-22) —
+      `model_avg_10.pth`, identical eval spec to the AVSR sweep:
+      ```powershell
+      foreach ($snr in 999999, 20, 15, 10, 5, 0, -5, -10) {
+        python eval_sweep.py +experiment=rohan_asr exp_dir=exp exp_name=rohan_asr_3448 `
+          data.dataset.root_dir=../datasets/rohan_preprocessed_fixed `
+          pretrained_model_path=exp/rohan_asr_3448/model_avg_10.pth transfer_frontend=false `
+          +data.num_workers=2 decode.snr_target=$snr `
+          decode.noise_filename=../noise_datasets/white_16k.wav
+        python eval_sweep.py +experiment=rohan_vsr_fixed exp_dir=exp exp_name=rohan_vsr_3448 `
+          pretrained_model_path=exp/rohan_vsr_3448/model_avg_10.pth transfer_frontend=false `
+          +data.num_workers=2 decode.snr_target=$snr `
+          decode.noise_filename=../noise_datasets/white_16k.wav
+      }
+      ```
+      All 16 evals validated in logged hparams (ASR version_38–45, VSR
+      version_46–53). ~11 min/ASR eval, ~13–15 min/VSR eval.
+      **Result:** ASR 3.87/9.78/15.99/26.01/43.15/73.89/91.36/95.60; VSR 26.36
+      at every level (bit-identical, as expected: noise is audio-only). AVSR
+      beats the better single modality from clean to 0 dB (max −15.5 pt at
+      10 dB, where ASR ≈ VSR) but is 3.7 / 6.2 pt worse than VSR at −5 / −10 dB.
+      `plot_snr_sweep.py` gained `--asr` / `--vsr`; combined plot
+      `exp/snr_sweep_white_8lvl_all.png`. Full table: RESULTS.md §2.2.
 - [ ] Seed eval noise per utterance ID (`AddNoise.forward` in
       `auto_avsr/datamodule/transforms.py` uses an unseeded `random.randint`
       offset), re-run the sweep for both arms, report paired bootstrap intervals.

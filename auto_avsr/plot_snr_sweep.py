@@ -14,6 +14,9 @@ Usage:
       --baseline exp/snr_sweep_rohan_avsr.csv \
       --gated    exp/snr_sweep_rohan_avsr_gated.csv \
       --out      exp/snr_sweep.png
+
+Optional --asr / --vsr add the single-modality reference curves (CER panel
+only; they have no gate).
 """
 import argparse
 import csv
@@ -29,6 +32,9 @@ CLEAN_SENTINEL = 100000
 # Colourblind-safe: blue (baseline) vs vermillion (gated).
 C_BASELINE = "#0072B2"
 C_GATED = "#D55E00"
+# Single-modality references: bluish green (ASR), reddish purple (VSR).
+C_ASR = "#009E73"
+C_VSR = "#CC79A7"
 
 
 def read_sweep(path):
@@ -76,6 +82,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--baseline", help="snr_sweep_<baseline>.csv (static fusion)")
     ap.add_argument("--gated", help="snr_sweep_<gated>.csv (dynamic fusion)")
+    ap.add_argument("--asr", help="snr_sweep_<asr>.csv (audio-only reference)")
+    ap.add_argument("--vsr", help="snr_sweep_<vsr>.csv (video-only reference)")
     ap.add_argument("--out", default="snr_sweep.png")
     args = ap.parse_args()
 
@@ -86,8 +94,14 @@ def main():
     if args.gated:
         f, ek, c = read_sweep(args.gated)
         runs.append(("gated (dynamic)", C_GATED, f, ek, c))
+    if args.asr:
+        f, ek, c = read_sweep(args.asr)
+        runs.append(("ASR (audio only)", C_ASR, f, ek, c))
+    if args.vsr:
+        f, ek, c = read_sweep(args.vsr)
+        runs.append(("VSR (video only)", C_VSR, f, ek, c))
     if not runs:
-        ap.error("pass at least one of --baseline / --gated")
+        ap.error("pass at least one of --baseline / --gated / --asr / --vsr")
 
     err_label = "CER" if any(r[3] == "cer" for r in runs) else "WER"
 
