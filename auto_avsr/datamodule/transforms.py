@@ -104,8 +104,14 @@ class AddNoise(torch.nn.Module):
         snr_levels=None,
         noise_prob=1.0,
         sample_rate=16000,
+        seed=None,
     ):
         super().__init__()
+        # ``seed`` (eval only, decode.noise_seed): None keeps the original
+        # global-RNG draws. An int makes every draw a function of (seed,
+        # utterance key), so each utterance gets the same noise crop in every
+        # run and every arm, and the same crop at every SNR level.
+        self.seed = seed
         # Precedence: an explicit ``snr_target`` (used at eval time to pin a
         # single SNR) wins; otherwise sample from ``snr_levels`` (configurable
         # per experiment); otherwise fall back to the default mix.
@@ -128,15 +134,23 @@ class AddNoise(torch.nn.Module):
             noise = torchaudio.functional.resample(noise, noise_sr, sample_rate)
         self.noise = noise
 
-    def forward(self, speech):
+    def forward(self, speech, key=None):
         # speech: T x 1
         # return: T x 1
-        if self.noise_prob < 1.0 and random.random() >= self.noise_prob:
+        # key: utterance ID; required when seeded, ignored otherwise.
+        if self.seed is not None:
+            if key is None:
+                raise ValueError("seeded AddNoise needs an utterance key")
+            # str seeds hash via SHA-512: stable across processes/PYTHONHASHSEED.
+            rng = random.Random(f"{self.seed}:{key}")
+        else:
+            rng = random
+        if self.noise_prob < 1.0 and rng.random() >= self.noise_prob:
             return speech
         speech = speech.t()
-        start_idx = random.randint(0, self.noise.shape[1] - speech.shape[1])
+        start_idx = rng.randint(0, self.noise.shape[1] - speech.shape[1])
         noise_segment = self.noise[:, start_idx : start_idx + speech.shape[1]]
-        snr_level = torch.tensor([random.choice(self.snr_levels)])
+        snr_level = torch.tensor([rng.choice(self.snr_levels)])
         noisy_speech = torchaudio.functional.add_noise(speech, noise_segment, snr_level)
         return noisy_speech.t()
 
@@ -167,10 +181,12 @@ class VideoTransform:
 
 class AudioTransform:
     def __init__(self, subset, snr_target=None, snr_levels=None, noise_prob=1.0,
-                 noise_filename=None, sample_rate=16000):
+                 noise_filename=None, sample_rate=16000, noise_seed=None):
         # ``noise_filename`` only affects eval-time noise (decode.noise_filename,
         # e.g. white noise for the Kondo & Tamura Table IV replica). Training
         # augmentation keeps the original babble noise regardless.
+        # ``noise_seed`` likewise only seeds eval-time noise (decode.noise_seed);
+        # training noise stays random.
         # ``sample_rate`` (= dataset rate_ratio x 25 fps) keeps the time mask
         # the same 0.4 s and the noise segments time-aligned at 19.2 kHz.
         if subset == "train":
@@ -186,16 +202,20 @@ class AudioTransform:
             self.audio_pipeline = torch.nn.Sequential(
                 AddNoise(snr_target=snr_target,
                          noise_filename=noise_filename or NOISE_FILENAME,
-                         sample_rate=sample_rate)
+                         sample_rate=sample_rate, seed=noise_seed)
                 if snr_target is not None
                 else FunctionalModule(_identity),
                 FunctionalModule(_instance_layer_norm),
             )
 
-    def __call__(self, sample):
+    def __call__(self, sample, key=None):
         # sample: T x 1
         # rtype: T x 1
-        return self.audio_pipeline(sample)
+        # Same as calling the Sequential, except the utterance ``key`` is
+        # forwarded to AddNoise (for seeded eval noise).
+        for module in self.audio_pipeline:
+            sample = module(sample, key=key) if isinstance(module, AddNoise) else module(sample)
+        return sample
 
 
 class TextTransform:

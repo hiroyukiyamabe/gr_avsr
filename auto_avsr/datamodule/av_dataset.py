@@ -39,6 +39,14 @@ def load_video(path):
     return vid
 
 
+def utterance_id(rel_path):
+    """Utterance key, e.g. ``rohan_video_seg/ROHAN4600_0012.mp4`` -> ``ROHAN4600_0012``.
+
+    Seeds the eval noise crop (decode.noise_seed) and labels per-utterance logs.
+    """
+    return os.path.splitext(os.path.basename(rel_path))[0]
+
+
 def load_audio(path):
     """
     rtype: torch, T x 1
@@ -94,14 +102,14 @@ class AVDataset(torch.utils.data.Dataset):
             return {"input": video, "target": token_id}
         elif self.modality == "audio":
             audio = load_audio(path)
-            audio = self.audio_transform(audio)
+            audio = self.audio_transform(audio, key=utterance_id(rel_path))
             return {"input": audio, "target": token_id}
         elif self.modality == "audiovisual":
             video = load_video(path)
             audio = load_audio(path)
             audio = cut_or_pad(audio, len(video) * self.rate_ratio)
             video = self.video_transform(video)
-            audio = self.audio_transform(audio)
+            audio = self.audio_transform(audio, key=utterance_id(rel_path))
             return {"video": video, "audio": audio, "target": token_id}
 
     def __len__(self):

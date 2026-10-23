@@ -1,7 +1,8 @@
 # Results: Tamura Reproduction + Dynamic-Fusion Study
 
 Final numbers as of 2026-07-12 (extended SNR sweep added 2026-10-08, §2.1;
-ASR/VSR under the same sweep 2026-10-22, §2.2).
+ASR/VSR under the same sweep 2026-10-22, §2.2; seeded per-utterance twin sweep
+with paired bootstrap and gate diagnostic 2026-10-23, §2.3).
 Reproduction target: Kondo & Tamura, "Audio-Visual Speech Recognition Based on
 Cross-Lingual Transfer Learning" (APSIPA ASC 2025),
 framework (c) — English front-ends from the 3,448 h Auto-AVSR checkpoints,
@@ -41,6 +42,9 @@ Noisy numbers in this table are the July 2026 evals (`eval.py`). The October
 re-eval of the same checkpoints (§2.1) gives slightly different noisy CERs
 because eval noise is unseeded — the 10 dB winner flips. Read both tables
 together; neither set of sub-0.5 pt gaps is significant.
+**Superseded for twin comparisons (2026-10-23) by §2.3**, where both arms see
+identical seeded noise and every gap carries a paired-bootstrap interval. The
+numbers below are kept as the July record.
 
 | Condition | AVSR static (frozen gate) | AVSR gated | gate_w_audio (gated) |
 |---|---:|---:|---:|
@@ -135,7 +139,8 @@ Reference: VSR (video only) 26.36 %.
    −10 dB) would test it.
 
 **Implications for follow-up work:** seed the eval noise per utterance ID so
-both arms see identical noise, then report paired bootstrap intervals; a
+both arms see identical noise, then report paired bootstrap intervals (**done
+2026-10-23, §2.3**); a
 reliability-gated *visual-only* path (cf. router-gated cross-attention,
 arXiv 2508.18734) or modality dropout targets the fallback gap directly.
 
@@ -186,6 +191,137 @@ single-modality systems.
    (10 dB 26.09 → 26.01, 5 dB 43.42 → 43.15) are within the unseeded-noise
    spread noted in §2.1.
 
+### 2.3 Per-utterance twin sweep, seeded noise (2026-10-23)
+
+Phase 2c, **weak form** (CLAUDE.md §5.1): utterance-level gate weight against
+target SNR, plus paired bootstrap of the twin CER gap. Inference only, same two
+frozen `model_avg_10.pth` checkpoints as §2.1 (static sha256 `f543646f…`, gated
+`6f0291cb…`), `rohan_avsr_fixed`, 16 kHz, NoiseX-92 white (`white_16k.wav`,
+held out from training), eight levels, `decode.noise_seed=0`. Static arm
+evaluated with `fusion_gate_freeze=true` (its training setting), gated with
+`false`; nothing else differs.
+
+**What changed vs §2.1.** (1) Eval noise is seeded: the crop offset into the
+noise file is a fixed function of (`noise_seed`, utterance ID), so both arms
+see bit-identical noisy audio (verified by a SHA-1 of the model's audio input,
+400/400 utterances at every level), and each utterance uses the **same crop at
+every SNR** (only the scale changes). Training noise is untouched (still
+random). (2) `eval_sweep_utt.py` logs one row per (arm, SNR, utterance) plus
+per-frame traces for 8 utterances fixed before the run (length quantiles; list
+in `configs/decode/default.yaml`). It wraps the unchanged `test_step`, so
+aggregates come from the same code: clean CER and gate are **bit-identical** to
+§2.1 (static 0.031336478888988495, gated 0.03524336591362953 / 0.5370424389839172).
+
+Outputs: `auto_avsr/exp/per_utt_sweep/` — `<exp_name>/snr_<snr>.csv` (columns
+`utt_id, n_frames, gate_w_audio_mean/std/min/max, edit_distance, ref_len,
+audio_sha1`), `*_traces.json`, `*_meta.json` (checkpoint + noise hashes,
+logged and row-summed aggregates, eval log dir), `summary.md`/`summary.json`
+(all tables below + 132 integrity checks), plots `gate_vs_snr_per_utt.png`,
+`gate_traces.png`, `delta_cer_bootstrap.png`; log `per_utt_sweep.log`.
+
+To reproduce (PowerShell, from `auto_avsr\`, venv active; ~15 min/eval, ~4 h).
+The script refuses to overwrite, so move `exp\per_utt_sweep` first:
+
+```powershell
+$env:PYTHONIOENCODING = "utf-8"
+$log = "exp\per_utt_sweep\per_utt_sweep.log"
+$arms = @(@("rohan_avsr_3448_static", "true"), @("rohan_avsr_3448_gated", "false"))
+foreach ($snr in 999999, 20, 15, 10, 5, 0, -5, -10) {
+  foreach ($arm in $arms) {
+    $exp = $arm[0]; $frz = $arm[1]
+    "=== $(Get-Date -Format s) $exp snr=$snr ===" | Out-File -Append -Encoding utf8 $log
+    python eval_sweep_utt.py +experiment=rohan_avsr_fixed exp_dir=exp exp_name=$exp `
+      pretrained_model_path=exp/$exp/model_avg_10.pth transfer_frontend=false `
+      model.audiovisual_backbone.fusion_gate_freeze=$frz `
+      +data.num_workers=2 decode.snr_target=$snr decode.noise_seed=0 `
+      decode.noise_filename=../noise_datasets/white_16k.wav *>> $log
+    "=== exit $LASTEXITCODE ===" | Out-File -Append -Encoding utf8 $log
+  }
+}
+python analyze_per_utt_sweep.py --dir exp/per_utt_sweep
+```
+
+**Integrity (all passed, `summary.md`).** 400 utterances per run; static arm
+exactly 0.5 at every frame of every utterance (rows and traces); identical
+audio across arms; noise applied at every finite level; rows sum exactly to the
+logged totals; eval `hparams.yaml` of the two arms differ only in `exp_name`,
+`pretrained_model_path`, `fusion_gate_freeze`, and across levels only in
+`snr_target`.
+
+**CER, seeded noise.** Δ = gated − static (pt); 95 % CI from a paired
+bootstrap over utterances (B = 10,000, same resample for both arms).
+
+| SNR (white) | AVSR static | AVSR gated | Δ | 95 % CI | utts gated better / worse / tie | gate_w_audio (gated) |
+|---|---:|---:|---:|---|---|---:|
+| clean | **3.13** | 3.52 | +0.39 | [+0.09, +0.69] | 61 / 89 / 250 | 0.537 |
+| 20 dB | 5.46 | 5.36 | −0.10 | [−0.52, +0.34] | 117 / 95 / 188 | 0.538 |
+| 15 dB | 8.00 | **7.24** | −0.77 | [−1.25, −0.30] | 151 / 107 / 142 | 0.522 |
+| 10 dB | 10.64 | 10.40 | −0.24 | [−0.76, +0.29] | 146 / 137 / 117 | 0.489 |
+| 5 dB | **15.40** | 16.30 | +0.90 | [+0.25, +1.55] | 140 / 176 / 84 | 0.443 |
+| 0 dB | **23.19** | 24.11 | +0.92 | [+0.08, +1.73] | 153 / 191 / 56 | 0.392 |
+| −5 dB | 30.11 | 30.13 | +0.02 | [−0.73, +0.78] | 153 / 147 / 100 | 0.359 |
+| −10 dB | 32.85 | 32.21 | −0.64 | [−1.44, +0.15] | 172 / 147 / 81 | 0.346 |
+
+Bold = the CI excludes 0. Eval logs: static `lightning_logs/version_54, 56, …, 68`,
+gated `version_55, 57, …, 69` (clean → −10 dB).
+
+**Gate vs target SNR (gated arm; utterance-mean audio weight over 400 utterances).**
+
+| SNR | mean | sd between utts | p5–p95 | median within-utt sd |
+|---|---:|---:|---|---:|
+| clean | 0.539 | 0.020 | 0.509–0.571 | 0.123 |
+| 20 dB | 0.539 | 0.020 | 0.507–0.571 | 0.094 |
+| 15 dB | 0.523 | 0.020 | 0.491–0.555 | 0.091 |
+| 10 dB | 0.490 | 0.018 | 0.462–0.519 | 0.089 |
+| 5 dB | 0.443 | 0.016 | 0.417–0.472 | 0.077 |
+| 0 dB | 0.392 | 0.014 | 0.369–0.415 | 0.058 |
+| −5 dB | 0.358 | 0.012 | 0.340–0.378 | 0.052 |
+| −10 dB | 0.345 | 0.011 | 0.328–0.364 | 0.054 |
+
+**Findings.**
+
+1. **Twin CER: still no consistent gated benefit.** With identical noise and
+   paired intervals, four of eight gaps exclude zero, in both directions:
+   static is better clean (+0.39), at 5 dB (+0.90) and 0 dB (+0.92); gated is
+   better at 15 dB (−0.77). The other four include zero. These signs agree
+   with every earlier unseeded eval of the same level (5 dB: July +0.55 and
+   October +0.37; 0 dB: October +0.89; 15 dB: October −0.54), so they are
+   probably not artefacts of this one noise draw. The 10 dB sign has now
+   flipped three times (July −0.09, October +0.25, now −0.24; CI spans 0). The intervals cover test-utterance sampling for one
+   noise draw and one training seed per arm only. Neither noise-draw variance
+   (the seeded aggregates moved up to 0.4 pt vs §2.1, e.g. static 5 dB 15.77 →
+   15.40) nor training-seed variance is included, so the true uncertainty is
+   wider. With eight levels, about one CI would exclude zero by chance at 95 %.
+2. **Weak form: the utterance-level gate weight is ordered by target SNR.**
+   For **every** one of the 400 utterances, the mean audio weight is strictly
+   higher at the higher SNR of each adjacent pair from −10 to 20 dB (100 % of
+   utterances, all six pairs). This is a paired comparison under the same-crop
+   design, so only the noise scale differs within an utterance. The level
+   explains 95.4 % of the variance of utterance means (η²); per-utterance
+   Spearman ρ across the 8 levels has median 0.976, min 0.929. Separation
+   *across* utterances (unpaired AUC) is high in the middle (−5↔0: 0.97,
+   0↔5: 0.99, 5↔10: 0.97) and weak at the ends (−10↔−5: 0.79, 15↔20: 0.72).
+   20 dB and clean are indistinguishable (paired 46 %, AUC 0.50): the response
+   saturates above ~20 dB and flattens below −5 dB. Pooled gate means match
+   §2.1 to three decimals; white noise is stationary, so the noise draw barely
+   moves them.
+3. **The gate varies within utterances, more than between them.** The median
+   per-utterance sd of the per-frame weight (0.05–0.12) is 4–6× the
+   between-utterance sd of the means (0.01–0.02) at every level. It is
+   largest on clean speech (0.12; trace ranges ≈ 0.32–0.80) and shrinks as SNR falls (0.05 at
+   −10 dB, where the weight stays low throughout). In the traces
+   (`gate_traces.png`), some stretches of each utterance converge to
+   ≈ 0.40–0.45 at every SNR, while other stretches fan out by SNR. **Not
+   verified:** these may be pauses or non-speech frames versus speech, but no
+   speech-activity or segmental-SNR reference was computed.
+4. **Scope.** This is the weak form only: one stationary noise type at a
+   fixed target SNR per utterance. It shows that the utterance-mean weight
+   tracks the utterance's noise level; it does **not** validate a per-frame
+   reliability interpretation. Finding 3 shows the per-frame weight moves for
+   reasons the target SNR does not explain. The strong form (per-frame weight
+   against segmental SNR, or against a known per-frame corruption mask)
+   remains open.
+
 ## 3. VSR ablations (why the 26.4 vs 19.7 gap is the video data)
 
 | Variant | Frontend | Framing (mouth width in 96 px) | CER |
@@ -223,6 +359,8 @@ checkpoint, dataset root, `snr_target` and `noise_filename` actually used.
 | AVSR gated 8-level sweep (clean, 20 … −10 dB) | version_42 | version_30 – 37 |
 | ASR 8-level sweep (clean, 20 … −10 dB) | (2026-07-08 run) | version_38 – 45 |
 | VSR 8-level sweep (clean, 20 … −10 dB) | version_31 | version_46 – 53 |
+| AVSR per-utterance seeded sweep, static (clean … −10 dB) | version_41 | version_54, 56, 58, 60, 62, 64, 66, 68 |
+| AVSR per-utterance seeded sweep, gated (clean … −10 dB) | version_42 | version_55, 57, 59, 61, 63, 65, 67, 69 |
 
 ## 5. Documented deviations from the paper
 

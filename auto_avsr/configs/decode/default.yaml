@@ -3,4 +3,28 @@ snr_target: 999999
 # Eval-time noise source. null = the original babble_noise.wav. Set to a 16 kHz
 # wav (e.g. ../noise_datasets/white_16k.wav) for the white-noise Table IV replica.
 # Only used when snr_target pins a finite SNR; training noise is unaffected.
+#
+# Train/eval corruption split (must stay disjoint, CLAUDE.md section 4):
+#   train: datamodule/babble_noise.wav (random crop, random SNR from
+#          data.noise_snr_levels) -- never seeded.
+#   eval:  NoiseX-92 white (../noise_datasets/white_16k.wav) -- seeded when
+#          noise_seed is set.
 noise_filename:
+# Eval-time noise seed. null = original unseeded crop (a new random offset into
+# the noise file per utterance on every run). An int makes the crop a fixed
+# function of (noise_seed, utterance ID): every arm and every rerun sees the
+# identical noisy input, and each utterance uses the same crop at every SNR.
+noise_seed:
+# Per-frame audio gate traces saved by eval_sweep_utt.py (Phase 2c, weak form).
+# Fixed 2026-10-23 before any per-utterance result existed. Rule (length only):
+# sort the 400 test utterances by frame count (ties by ID) and take positions
+# 25, 75, ..., 375, the centres of 8 equal-count length bins (116..245 frames).
+trace_utterances:
+  - ROHAN4600_2664
+  - ROHAN4600_2549
+  - ROHAN4600_4174
+  - ROHAN4600_4519
+  - ROHAN4600_2086
+  - ROHAN4600_3717
+  - ROHAN4600_3506
+  - ROHAN4600_3191

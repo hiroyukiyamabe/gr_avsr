@@ -4,9 +4,13 @@
 > Table IV replica, twin-study verdict, VSR ablations, run provenance,
 > documented deviations). This file remains the experimental log.
 >
-> **Status (2026-10-22): every experiment below is finished.** The only open
-> items are (1) seeding the eval noise per utterance ID before any new twin
-> comparison (see the 2026-10-08 sweep entry) and (2) the write-up. The log is
+> **Status (2026-10-23): every experiment below is finished.** Eval noise is
+> now seeded per utterance ID and the twin sweep was re-run per utterance with
+> paired bootstrap intervals (2026-10-23 entry; RESULTS.md §2.3). Open: the
+> strong-form gate diagnostic (per-frame weight vs segmental SNR or a known
+> corruption mask) and the write-up. ~~The only open items are (1) seeding the
+> eval noise per utterance ID before any new twin comparison (see the
+> 2026-10-08 sweep entry) and (2) the write-up.~~ (superseded 2026-10-23) The log is
 > chronological: earlier entries contain plans and "pending" notes that later
 > entries resolve — read each checklist item to its end before acting on it.
 
@@ -573,9 +577,44 @@ foreach ($snr in 999999, 10, 5) {
       10 dB, where ASR ≈ VSR) but is 3.7 / 6.2 pt worse than VSR at −5 / −10 dB.
       `plot_snr_sweep.py` gained `--asr` / `--vsr`; combined plot
       `exp/snr_sweep_white_8lvl_all.png`. Full table: RESULTS.md §2.2.
-- [ ] Seed eval noise per utterance ID (`AddNoise.forward` in
+- [x] Seed eval noise per utterance ID (`AddNoise.forward` in
       `auto_avsr/datamodule/transforms.py` uses an unseeded `random.randint`
       offset), re-run the sweep for both arms, report paired bootstrap intervals.
+      **DONE 2026-10-23** as the per-utterance gate test (CLAUDE.md §5.1, Phase
+      2c weak form). Inference only, existing `model_avg_10.pth` of both arms.
+      - Code: `decode.noise_seed` (default null = original unseeded behaviour;
+        training noise never seeded). When set, `AddNoise` draws from
+        `random.Random(f"{seed}:{utterance_id}")`, so the crop is identical
+        across arms and reruns and **the same crop is used at every SNR** for
+        a given utterance (design choice: only the noise scale varies across
+        levels). `AVDataset` passes the utterance ID (`ROHAN4600_xxxx`) to the
+        audio transform. Regression-tested against HEAD: unseeded train/val/
+        eval pipelines bit-identical incl. RNG consumption; seeded output
+        identical across processes and `PYTHONHASHSEED`.
+      - New `eval_sweep_utt.py`: wraps the unchanged `lightning_av` test_step
+        (per-utterance values = increments of the running totals; gate trace
+        via a forward hook on `fusion_gate`), strict checkpoint load as in
+        `eval.py`, aborts if a `fusion_gate_freeze=true` arm reads != 0.5 on
+        any frame, refuses to overwrite, writes CSV + traces + meta per run
+        to `exp/per_utt_sweep/<exp_name>/`. Trace utterances fixed before the
+        run by length quantile (`decode.trace_utterances`).
+      - New `analyze_per_utt_sweep.py` (written before results existed):
+        integrity checks, paired bootstrap, gate-vs-SNR stats, plots.
+      - Command: RESULTS.md §2.3 (static arm passes
+        `fusion_gate_freeze=true`, gated `false`; `decode.noise_seed=0`). All
+        16 evals exit 0, eval logs version_54–69 (static even, gated odd), all
+        132 integrity checks pass; clean CER/gate bit-identical to the
+        2026-10-08 sweep (logging changes nothing). Smoke tests ran from the
+        session scratchpad, not in `lightning_logs`.
+      - **Result:** seeded CER static 3.13/5.46/8.00/10.64/15.40/23.19/30.11/
+        32.85, gated 3.52/5.36/7.24/10.40/16.30/24.11/30.13/32.21 (clean →
+        −10 dB). Paired-bootstrap CIs exclude 0 at clean, 5, 0 dB (static
+        better) and 15 dB (gated better); others span 0 → still no consistent
+        gated benefit. Utterance-mean audio weight is strictly ordered by SNR
+        for 400/400 utterances across −10…20 dB (η² 0.954; 20 dB ≈ clean);
+        per-frame weight varies 4–6× more within utterances than the means
+        vary between them. Weak form only; the per-frame claim is not
+        validated. Full tables: RESULTS.md §2.3.
 - [ ] Write up: reproduction table + static-vs-gated comparison
 
 ---

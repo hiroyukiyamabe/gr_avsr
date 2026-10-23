@@ -129,6 +129,7 @@ class DataModule(LightningDataModule):
                 "test",
                 snr_target=self.cfg.decode.snr_target,
                 noise_filename=self.cfg.decode.get("noise_filename", None),
+                noise_seed=self.cfg.decode.get("noise_seed", None),
                 sample_rate=rate_ratio * 25,
             ),
             video_transform=VideoTransform("test"),
