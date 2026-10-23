@@ -92,7 +92,7 @@ Rules for the gate:
   diagnostic curve as a training, tuning or checkpoint-selection target.
 - Gate outputs are diagnostic only; do not feed them back into training.
 
-### 5.1 Current task: per-utterance gate test (inference only)
+### 5.1 Done 2026-10-23 (RESULTS.md §2.3): per-utterance gate test (inference only)
 
 The existing sweep CSVs (`exp/snr_sweep_*.csv`) hold only one test-set mean per SNR
 level, because `lightning_av.py` accumulates gate weights over the whole test set. The
@@ -123,6 +123,145 @@ per-utterance test needs a new inference-only sweep that logs per utterance. Rul
   Report it as such. The strong form (per-frame weight against segmental SNR or a known
   per-frame corruption mask) is a separate, later test.
 
+### 5.2 Current task: strong-form gate test (inference only)
+
+§5.1 showed that the utterance-mean audio weight is ordered by target SNR. It did not
+show that the per-frame weight tracks per-frame reliability, because uniform white noise
+at a fixed SNR gives the gate no within-utterance reason to vary. This task tests that,
+in two parts. Part A uses only existing outputs. Part B needs new evaluation runs.
+
+General rules (all of §5.1's rules still apply):
+
+- **No training, no model changes.** Use the same two `model_avg_10.pth` checkpoints as
+  §5.1 (static sha256 `f543646f…`, gated `6f0291cb…`) unchanged. Do not modify
+  `ModalityGate`, `E2E.fuse` or the decoding settings.
+- **Pre-register.** Fix every corruption setting, mask rule, threshold and analysis
+  choice in config and code, and commit them **before** the first real run. Smoke tests
+  run from the scratchpad, not in `lightning_logs`. Real runs must log a clean git tree
+  (`git.dirty == false` in the meta file); abort if it is dirty.
+- **Never tune toward the result.** If the gate fails this test, report it as failing.
+  Do not change chunk settings, thresholds or corruption types afterwards to make it
+  pass. A failure here is the pre-augmentation baseline for the same test after
+  chunk-wise training augmentation, not a bug.
+- **Frame alignment.** One frame = 40 ms = 640 audio samples at 16 kHz = one video frame
+  at 25 fps. Assert that the gate trace length, the number of video frames and
+  `audio_samples / 640` agree for every utterance. Stop and report if they don't.
+
+#### Part A: speech activity and segmental SNR on the existing traces (no GPU)
+
+- **Inputs.** Use the eight trace utterances in `decode.trace_utterances` and the
+  `*_traces.json` files in `exp/per_utt_sweep/`. Rebuild each utterance's noise crop
+  from (`noise_seed=0`, utterance ID) with the same code path as `AddNoise`, and check
+  it against the logged `audio_sha1`.
+- **Per-frame references, computed from the clean audio.** Speech activity uses an
+  energy-based VAD with a threshold fixed before looking at any trace. Segmental SNR is
+  10·log10(speech energy / noise energy) within each 640-sample frame, at each SNR
+  level.
+- **Report.** Give the mean gate weight in speech frames vs non-speech frames per
+  utterance and level, and the per-utterance Spearman correlation between per-frame
+  weight and segmental SNR.
+- **Scope.** Under stationary white noise, segmental SNR is almost entirely driven by
+  speech energy, so it is confounded with speech activity. Part A can show whether the
+  stretches converging to ≈ 0.40–0.45 (RESULTS.md §2.3, finding 3) are pauses. It
+  cannot separate reliability from speech activity; Part B does that.
+- **Outputs.** Write new files only (e.g. `exp/per_utt_sweep/partA_*`). Never modify the
+  §5.1 outputs.
+
+#### Part B: chunk-wise corruption with a known per-frame mask
+
+**Harness.**
+
+- Add seeded, eval-only chunk corruption to the test transforms, behind new `decode.*`
+  flags that are off by default. With the flags off, the train/val/test pipelines must be
+  bit-identical to HEAD, including RNG consumption. Regression-test this as was done for
+  `noise_seed`.
+- All draws are a function of (`noise_seed`, utterance ID, stream), so every arm sees the
+  identical corrupted input. Verify this with input hashes for both audio and video.
+- Each transform returns its per-frame boolean mask, which is logged alongside the gate.
+- Corruption is applied to the model's actual inputs: audio before
+  `_instance_layer_norm`, video on the preprocessed mouth ROI in the `VideoTransform`
+  test path.
+
+**Chunk settings.** These are defaults to confirm or change, then fix before running.
+
+- Per stream, independently: 1–3 chunks per utterance, each 10–25 frames (0.4–1.0 s),
+  with uniform random placement.
+- Sampling audio and video independently means chunks overlap in some utterances and
+  alternate in others, so all four reliability combinations occur.
+
+**Corruption types.** Train/eval disjointness is binding (§2 and §4).
+
+- **Audio:** NOISEX-92 white (`white_16k.wav`, already eval-only), added inside the
+  chunks only, at a fixed per-chunk SNR of −5 dB. Audio outside the chunks stays clean.
+- **Video:** choose the evaluation types now and record them in the config. Once chosen,
+  they are **excluded from all future training augmentation**. Suggested: occlusion with
+  patches from a held-out occluder image set, plus Gaussian blur. Training visual
+  augmentation will then use the remaining AV-RelScore-style types and a disjoint
+  occluder set.
+
+**Conditions** (one run per arm × condition):
+
+- `audio_chunks`: audio corrupted in chunks, video clean.
+- `video_chunks`: video corrupted in chunks, audio clean.
+- `both_chunks`: both streams corrupted, with masks drawn independently.
+- `placebo`: the same masks as `both_chunks` are drawn and logged, but no corruption is
+  applied. This is the control. Gate differences inside vs outside the masks must be
+  ≈ 0 here; if they are not, the analysis is picking up something other than corruption.
+
+**Arms.**
+
+- AVSR static (`fusion_gate_freeze=true`) and AVSR gated (`false`). The static arm must
+  still read exactly 0.5 everywhere; stop and report if it doesn't.
+- ASR under `audio_chunks` and VSR under `video_chunks`, with the same seeds, as
+  single-modality references for the "no worse than the better single modality" check.
+
+**Logging.**
+
+- One row per (arm, condition, utterance): utterance ID, `n_frames`, fraction of frames
+  corrupted per stream, mean audio gate weight inside and outside each mask (audio-only
+  corrupted, video-only corrupted, both, neither), character edit distance, reference
+  length, and audio and video input hashes.
+- Per-frame gate weights and both masks for **all** test utterances, one compressed
+  `.npz` per run. This is small, about 72k frames per run.
+- Write each run to a new directory, `exp/chunk_sweep/<exp_name>/<condition>`, and refuse
+  to overwrite.
+
+**Analysis.** The script is written and committed before any real run.
+
+- **Primary measure, per utterance (paired within the utterance):**
+  - Mean audio weight in audio-corrupted frames minus mean in uncorrupted frames.
+    Expected sign: negative.
+  - Mean audio weight in video-corrupted frames minus mean in uncorrupted frames.
+    Expected sign: positive.
+- Report the median and 95 % bootstrap CI across utterances, the fraction of utterances
+  with the expected sign, and the frame-level AUC. Put the placebo result beside every
+  number.
+- **Boundary smearing.** The Conformer encoders mix context across frames, so the gate's
+  response may spread past chunk edges. Report every measure twice: with all frames, and
+  with k = 2 frames excluded on each side of every chunk boundary. Fix k before running.
+- **CER.** Report the twin CER gap per condition with a paired bootstrap, using the §8
+  convention: a gap below ~0.5 pt is not called a win, even if its CI excludes 0. Also
+  compare against the ASR/VSR references.
+
+**Scope of claims.**
+
+- If the expected signs hold clearly and the placebo is ≈ 0, the per-frame weight tracks
+  the corrupted stream for these corruption types only. That is the evidence needed to
+  call the gate interpretable as reliability, restricted to the tested conditions.
+- If they do not hold, report the gate as reliability-sensitive at the utterance level
+  only (§5.1). This test is then repeated unchanged after chunk-wise training
+  augmentation.
+
+---
+
+Related edits elsewhere in CLAUDE.md:
+
+- §5.1 heading: change "Current task" to "Done 2026-10-23 (RESULTS.md §2.3)".
+- §8, after the 0.5 pt rule, add: "When a paired-bootstrap CI is available, report it,
+  but a gap below ~0.5 pt is still not called a win even if its CI excludes 0: the CI
+  covers test-utterance sampling only, not training-seed variance."
+
+
 ## 6. Pseudo-labelling
 
 - Pseudo-labelling (ASR transcripts converted to Katakana) is part of the system and is
@@ -149,6 +288,9 @@ per-utterance test needs a new inference-only sweep that logs per utterance. Rul
   `REPRODUCTION_PLAN.md`, say so explicitly, even if the divergence seems harmless.
 - Report numbers with the checkpoint, config overrides, noise file and SNR used.
 - Gaps under ~0.5 pt CER are within noise for this setup. Do not call them wins.
+  When a paired-bootstrap CI is available, report it, but a gap below ~0.5 pt is still
+  not called a win even if its CI excludes 0: the CI covers test-utterance sampling only,
+  not training-seed variance.
 - Keep `RESULTS.md` and `REPRODUCTION_PLAN.md` the sources of truth. Update them when
   results or commands change, and mark superseded content instead of silently deleting it.
 
