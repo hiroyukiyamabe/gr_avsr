@@ -4,6 +4,7 @@ import torch
 from pytorch_lightning import LightningDataModule
 
 from .av_dataset import AVDataset
+from .chunk_corruption import ChunkCorruption
 from .samplers import (
     ByFrameCountSampler,
     DistributedSamplerWrapper,
@@ -117,9 +118,23 @@ class DataModule(LightningDataModule):
             sampler = DistributedSamplerWrapper(sampler, shuffle=False, drop_last=True)
         return self._dataloader(val_ds, sampler, collate_pad)
 
+    def _test_chunk_corruption(self, rate_ratio):
+        """ChunkCorruption for decode.chunk_condition (CLAUDE.md 5.2 Part B), else None."""
+        condition = self.cfg.decode.get("chunk_condition", None)
+        if condition is None:
+            return None
+        # Outside the chunks the input must be the clean test input.
+        if self.cfg.decode.snr_target != 999999:
+            raise ValueError("chunk corruption needs decode.snr_target=999999 (clean outside the chunks)")
+        return ChunkCorruption(
+            self.cfg.decode.chunk, condition, self.cfg.decode.get("noise_seed", None),
+            sample_rate=rate_ratio * 25, rate_ratio=rate_ratio,
+        )
+
     def test_dataloader(self):
         ds_args = self.cfg.data.dataset
         rate_ratio = getattr(ds_args, "rate_ratio", 640)
+        chunk = self._test_chunk_corruption(rate_ratio)
         dataset = AVDataset(
             root_dir=ds_args.root_dir,
             label_path=os.path.join(ds_args.root_dir, ds_args.label_dir, ds_args.test_file),
@@ -131,9 +146,11 @@ class DataModule(LightningDataModule):
                 noise_filename=self.cfg.decode.get("noise_filename", None),
                 noise_seed=self.cfg.decode.get("noise_seed", None),
                 sample_rate=rate_ratio * 25,
+                chunk=chunk,
             ),
-            video_transform=VideoTransform("test"),
+            video_transform=VideoTransform("test", chunk=chunk),
             rate_ratio=rate_ratio,
+            chunk=chunk,
         )
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=None)
         return dataloader

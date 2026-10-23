@@ -156,7 +156,13 @@ class AddNoise(torch.nn.Module):
 
 
 class VideoTransform:
-    def __init__(self, subset):
+    def __init__(self, subset, chunk=None):
+        # ``chunk`` (test only, decode.chunk_condition): a ChunkCorruption that
+        # corrupts seeded chunks of the RGB mouth crop before grayscale. None
+        # keeps the original pipeline and return value.
+        if chunk is not None and subset != "test":
+            raise ValueError("chunk corruption is eval-only (test subset)")
+        self.chunk = chunk
         if subset == "train":
             self.video_pipeline = torch.nn.Sequential(
                 FunctionalModule(_scale_pixels),
@@ -173,15 +179,22 @@ class VideoTransform:
                 torchvision.transforms.Normalize(0.421, 0.165),
             )
 
-    def __call__(self, sample):
+    def __call__(self, sample, key=None):
         # sample: T x C x H x W
-        # rtype: T x 1 x H x W
-        return self.video_pipeline(sample)
+        # rtype: T x 1 x H x W; with chunk corruption, (video, mask, type bits)
+        # key: utterance ID; required with chunk corruption, ignored otherwise.
+        if self.chunk is None:
+            return self.video_pipeline(sample)
+        # Scale + CenterCrop(88) give the model's mouth crop (RGB, [0, 1]); the
+        # chunks are corrupted there, then grayscale + normalise as usual.
+        frames = self.video_pipeline[:2](sample)
+        frames, mask, vtype = self.chunk.corrupt_video(frames, key)
+        return self.video_pipeline[2:](frames), mask, vtype
 
 
 class AudioTransform:
     def __init__(self, subset, snr_target=None, snr_levels=None, noise_prob=1.0,
-                 noise_filename=None, sample_rate=16000, noise_seed=None):
+                 noise_filename=None, sample_rate=16000, noise_seed=None, chunk=None):
         # ``noise_filename`` only affects eval-time noise (decode.noise_filename,
         # e.g. white noise for the Kondo & Tamura Table IV replica). Training
         # augmentation keeps the original babble noise regardless.
@@ -189,6 +202,12 @@ class AudioTransform:
         # training noise stays random.
         # ``sample_rate`` (= dataset rate_ratio x 25 fps) keeps the time mask
         # the same 0.4 s and the noise segments time-aligned at 19.2 kHz.
+        # ``chunk`` (test only, decode.chunk_condition): a ChunkCorruption that
+        # corrupts seeded chunks right before the instance layer norm. None
+        # keeps the original pipeline and return value.
+        if chunk is not None and subset != "test":
+            raise ValueError("chunk corruption is eval-only (test subset)")
+        self.chunk = chunk
         if subset == "train":
             self.audio_pipeline = torch.nn.Sequential(
                 AdaptiveTimeMask(sample_rate * 2 // 5, sample_rate),
@@ -208,14 +227,19 @@ class AudioTransform:
                 FunctionalModule(_instance_layer_norm),
             )
 
-    def __call__(self, sample, key=None):
+    def __call__(self, sample, key=None, n_frames=None):
         # sample: T x 1
-        # rtype: T x 1
+        # rtype: T x 1; with chunk corruption, (audio, mask)
         # Same as calling the Sequential, except the utterance ``key`` is
         # forwarded to AddNoise (for seeded eval noise).
+        # n_frames: video frame count; fixes the chunk mask (chunk corruption only).
+        mask = None
         for module in self.audio_pipeline:
+            if self.chunk is not None and module is self.audio_pipeline[-1]:
+                # The last module is the instance layer norm.
+                sample, mask = self.chunk.corrupt_audio(sample, key, n_frames)
             sample = module(sample, key=key) if isinstance(module, AddNoise) else module(sample)
-        return sample
+        return sample if self.chunk is None else (sample, mask)
 
 
 class TextTransform:

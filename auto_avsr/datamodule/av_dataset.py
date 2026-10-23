@@ -67,9 +67,13 @@ class AVDataset(torch.utils.data.Dataset):
         audio_transform,
         video_transform,
         rate_ratio=640,
+        chunk=None,
     ):
 
         self.root_dir = root_dir
+        # ``chunk``: the ChunkCorruption shared with the test transforms
+        # (decode.chunk_condition); None = original items.
+        self.chunk = chunk
 
         self.modality = modality
         self.rate_ratio = rate_ratio
@@ -96,6 +100,8 @@ class AVDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         dataset_name, rel_path, input_length, token_id = self.list[idx]
         path = os.path.join(self.root_dir, dataset_name, rel_path)
+        if self.chunk is not None:
+            return self._chunk_item(path, rel_path, input_length, token_id)
         if self.modality == "video":
             video = load_video(path)
             video = self.video_transform(video)
@@ -111,6 +117,38 @@ class AVDataset(torch.utils.data.Dataset):
             video = self.video_transform(video)
             audio = self.audio_transform(audio, key=utterance_id(rel_path))
             return {"video": video, "audio": audio, "target": token_id}
+
+    def _chunk_item(self, path, rel_path, n_frames, token_id):
+        """Item with seeded chunk corruption plus its per-frame masks.
+
+        Same model inputs as ``__getitem__`` except inside corrupted chunks. Both
+        streams' masks are returned for every modality (a stream the model does
+        not see is only drawn, never loaded), so every run logs the same masks.
+        ``n_frames`` is the label file's frame count (= video frames, checked).
+        """
+        key = utterance_id(rel_path)
+        item = {"target": token_id, "utt_id": key, "n_frames": n_frames}
+        if self.modality in ("video", "audiovisual"):
+            video = load_video(path)
+            if len(video) != n_frames:
+                raise RuntimeError(f"{key}: {len(video)} video frames, label file says {n_frames}")
+            video, video_mask, video_type = self.video_transform(video, key=key)
+            item["video" if self.modality == "audiovisual" else "input"] = video
+        else:
+            video_mask, video_type = self.chunk.video_mask(key, n_frames)
+        if self.modality in ("audio", "audiovisual"):
+            audio = load_audio(path)
+            item["audio_raw_len"] = len(audio)
+            if self.modality == "audiovisual":
+                audio = cut_or_pad(audio, n_frames * self.rate_ratio)
+            audio, audio_mask = self.audio_transform(audio, key=key, n_frames=n_frames)
+            item["audio" if self.modality == "audiovisual" else "input"] = audio
+        else:
+            audio_mask = self.chunk.audio_mask(key, n_frames)
+        item["audio_mask"] = torch.from_numpy(audio_mask)
+        item["video_mask"] = torch.from_numpy(video_mask)
+        item["video_type"] = torch.from_numpy(video_type)
+        return item
 
     def __len__(self):
         return len(self.list)

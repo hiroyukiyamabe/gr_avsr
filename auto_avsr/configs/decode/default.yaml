@@ -28,3 +28,51 @@ trace_utterances:
   - ROHAN4600_3717
   - ROHAN4600_3506
   - ROHAN4600_3191
+#
+# Phase 2c strong form, Part B (CLAUDE.md section 5.2): seeded, eval-only
+# chunk-wise corruption with a known per-frame mask, run by eval_chunk_sweep.py.
+# null = off (train/val/test pipelines unchanged). One of:
+#   audio_chunks  audio corrupted in chunks, video clean
+#   video_chunks  video corrupted in chunks, audio clean
+#   both_chunks   both corrupted, masks drawn independently per stream
+#   placebo       the both_chunks masks drawn and logged, nothing applied (control)
+# Requires noise_seed (all draws are a function of (noise_seed, utterance ID,
+# stream)) and snr_target=999999 (clean outside the chunks).
+chunk_condition:
+# Pre-registered 2026-10-23, before any Part B run; never change these to make
+# the gate pass (CLAUDE.md 5.2). Relative paths are relative to auto_avsr/.
+#
+# Train/eval corruption split (must stay disjoint, CLAUDE.md sections 2 and 4):
+#   eval only (here): NoiseX-92 white noise; Gaussian blur; occlusion with the
+#     "eval" half of the NatOcc COCO objects (datamodule/natocc_split.csv).
+#   future training augmentation may use only: babble (datamodule/babble_noise.wav),
+#     occlusion with the "train" half of natocc_split.csv, Gaussian pixel noise.
+#     Never blur, never white noise, never an "eval" occluder.
+chunk:
+  n_chunks: [1, 3]        # chunks per stream per utterance, uniform integer (inclusive)
+  chunk_frames: [10, 25]  # chunk length in 40 ms frames (0.4-1.0 s), uniform integer (inclusive)
+  # Start uniform in [0, n_frames - length]; chunks of one stream may overlap
+  # (mask = union). Draw order: datamodule/chunk_corruption.py, ChunkCorruption.
+  audio:
+    noise_filename: ../noise_datasets/white_16k.wav
+    # dB over the whole clean utterance: the seeded crop and level of the
+    # per-utterance sweep at -5 dB, added inside the chunks only.
+    snr: -5
+  video:
+    types: [occlusion, blur]  # one per chunk, uniform
+    blur_kernel: 25           # Gaussian blur on the 88x88 RGB mouth crop
+    blur_sigma: 4.0
+    # Occlusion as AV-RelScore: object image zeroed outside its mask, both
+    # resized (Lanczos) to a size x size square, mask / 255 as alpha, one object
+    # at one position for the whole chunk.
+    occluder_dir: ../datasets/occluders/natocc_coco_object/coco_object
+    occluder_split: datamodule/natocc_split.csv
+    occluder_split_sha256: e9415b3cd214a09463e1bbd7974e38fc7877cecae64ca605c91c079f1b9033d2
+    # Crop audit (REPRODUCTION_PLAN.md, 2026-07-10): mouth centre (46.4, 40.0)
+    # in the 96 px ROI = (42.4, 36.0) after CenterCrop(88); mouth width 52.8 px.
+    occluder_size: 35         # px, ~2/3 of the mouth width
+    occluder_center: [42, 36] # (x, y) px in the 88x88 crop
+    occluder_jitter: [20, 10] # patch centre offset, uniform integer in +/- (x, y) px
+  # Analysis (analyze_chunk_sweep.py): frames within k of a chunk boundary are
+  # excluded in the second reading of every measure (encoder context smearing).
+  boundary_k: 2

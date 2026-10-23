@@ -615,6 +615,96 @@ foreach ($snr in 999999, 10, 5) {
         per-frame weight varies 4–6× more within utterances than the means
         vary between them. Weak form only; the per-frame claim is not
         validated. Full tables: RESULTS.md §2.3.
+- [ ] Strong-form gate test (CLAUDE.md §5.2, Phase 2c). Inference only, the same
+      two `model_avg_10.pth` as §2.3 (static `f543646f…`, gated `6f0291cb…`),
+      plus `rohan_asr_3448` / `rohan_vsr_3448` as single-modality references.
+      **Pre-registered 2026-10-23**: every setting below was committed before
+      the first real run (Part A before its first run on the real traces).
+      - **Part A** (no GPU): `analyze_gate_partA.py` on the 8 §2.3 trace
+        utterances. Rebuilds each model input from (`noise_seed=0`, utterance
+        ID) through `AudioTransform`/`AddNoise` and checks it against the logged
+        `audio_sha1`. VAD on clean audio: speech iff frame energy ≥ utterance
+        max − 30 dB (−20/−40 dB as sensitivity only). Segmental SNR per
+        640-sample frame from the actually added noise. Reports speech − non-
+        speech weight, per-utterance Spearman(weight, segmental SNR), and the
+        across-level sd of each frame's weight in speech vs non-speech frames
+        (are the "converging stretches" of §2.3 finding 3 pauses?). Outputs
+        `exp/per_utt_sweep/partA_*`. Tested on fake traces before commit.
+      - **Part B harness** (`decode.chunk_condition`, null = off): seeded,
+        eval-only chunk corruption, `datamodule/chunk_corruption.py`, wired
+        into the test `AudioTransform` (before `_instance_layer_norm`),
+        `VideoTransform` (RGB 88×88 crop, before grayscale) and `AVDataset`.
+        Draws are a function of (`noise_seed`, utterance ID, stream) only.
+        Regression-tested against HEAD with the flag off: train/val/test
+        items for all three modalities and `DataModule.test_dataloader`
+        bit-identical, Python/torch/numpy RNG state identical afterwards.
+        Chunk mode: placebo inputs bit-identical to the §2.3 clean inputs,
+        masks identical across conditions and modalities, VSR video =
+        AVSR video, inputs identical across processes and `PYTHONHASHSEED`.
+      - **Settings** (`configs/decode/default.yaml`, `decode.chunk`): per
+        stream 1–3 chunks of 10–25 frames, uniform start, overlaps merged.
+        Audio: NoiseX-92 white at −5 dB over the whole clean utterance (same
+        seeded crop and level as the §2.3 −5 dB input), inside chunks only.
+        Video: per chunk occlusion or Gaussian blur (p = ½ each). Blur σ = 4,
+        kernel 25. Occlusion: an object from the **eval half** of the NatOcc
+        COCO set (AV-RelScore's occluders, `coco_object.7z`; 64/64 split by
+        SHA-256 of the stem, `preparation/make_occluder_split.py` →
+        `datamodule/natocc_split.csv`), 35×35 px, Lanczos, soft alpha, centre
+        (42, 36) ± (20, 10) px, fixed for the chunk. Boundary exclusion k = 2.
+        **Eval-only from now on:** white noise, blur and the eval-half
+        occluders. Future training may use only babble, the train-half
+        occluders and Gaussian pixel noise (recorded in the config).
+      - **Conditions × arms**: AVSR static and gated × {placebo, audio_chunks,
+        video_chunks, both_chunks}; ASR × {placebo, audio_chunks}; VSR ×
+        {placebo, video_chunks}. The ASR/VSR placebo runs go beyond §5.2's
+        list. They give the per-utterance clean single-modality reference for
+        the "better single modality" check and must reproduce the §2.2 clean
+        CER exactly. ASR under both_chunks = ASR under audio_chunks, and VSR
+        under both_chunks = VSR under video_chunks, by construction.
+      - **Analysis** (`analyze_chunk_sweep.py`, committed with the harness):
+        dA = w(audio-only frames) − w(neither), expected < 0; dV =
+        w(video-only) − w(neither), expected > 0. Each is reported per
+        condition beside the placebo read with the same masks, at k = 0 and
+        k = 2. Per measure: median + 95 % bootstrap CI, share of utterances
+        with the expected sign, pooled and per-utterance frame AUC, and the
+        placebo-corrected effect. **PASS rule (k = 2):** dA in audio_chunks
+        and dV in video_chunks each have a CI excluding 0 on the expected
+        side, ≥ 75 % of utterances with the expected sign, and a placebo ≈ 0
+        (CI includes 0, or |median| ≤ 0.2 × the condition's median).
+        Otherwise the result is reported as utterance-level only (§5.1). CER:
+        twin gap and each arm vs the better single modality, paired bootstrap.
+      - **Real runs** refuse a dirty git tree. Untracked eval logs under
+        `auto_avsr/lightning_logs/` are ignored, because each run writes one.
+        They also refuse to overwrite `exp/chunk_sweep/<exp_name>/<condition>`.
+        Smoke tests (3 utterances, all 12 runs, plus the analysis) ran from the
+        session scratchpad. The gated both_chunks smoke rows were displayed.
+        No setting was changed after that.
+      - Commands (PowerShell, from `auto_avsr\`, venv active; ~15 min per AVSR
+        eval, ~3 h total):
+        ```powershell
+        $env:PYTHONIOENCODING = "utf-8"
+        python analyze_gate_partA.py   # Part A, CPU only
+        New-Item -ItemType Directory -Force exp\chunk_sweep | Out-Null
+        $log = "exp\chunk_sweep\chunk_sweep.log"
+        $common = @("exp_dir=exp", "transfer_frontend=false", "+data.num_workers=2",
+                    "decode.noise_seed=0", "decode.noise_filename=../noise_datasets/white_16k.wav")
+        $runs = @(
+          @("rohan_avsr_fixed", "rohan_avsr_3448_static", "model.audiovisual_backbone.fusion_gate_freeze=true",  "placebo,audio_chunks,video_chunks,both_chunks"),
+          @("rohan_avsr_fixed", "rohan_avsr_3448_gated",  "model.audiovisual_backbone.fusion_gate_freeze=false", "placebo,audio_chunks,video_chunks,both_chunks"),
+          @("rohan_asr_fixed",  "rohan_asr_3448",         "",                                                    "placebo,audio_chunks"),
+          @("rohan_vsr_fixed",  "rohan_vsr_3448",         "",                                                    "placebo,video_chunks"))
+        foreach ($r in $runs) {
+          foreach ($cond in $r[3].Split(",")) {
+            $extra = @(); if ($r[2]) { $extra = @($r[2]) }
+            "=== $(Get-Date -Format s) $($r[1]) $cond ===" | Out-File -Append -Encoding utf8 $log
+            python eval_chunk_sweep.py +experiment=$($r[0]) exp_name=$($r[1]) `
+              pretrained_model_path=exp/$($r[1])/model_avg_10.pth decode.chunk_condition=$cond `
+              @common @extra *>> $log
+            "=== exit $LASTEXITCODE ===" | Out-File -Append -Encoding utf8 $log
+          }
+        }
+        python analyze_chunk_sweep.py --dir exp/chunk_sweep
+        ```
 - [ ] Write up: reproduction table + static-vs-gated comparison
 
 ---

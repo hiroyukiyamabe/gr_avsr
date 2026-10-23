@@ -1,0 +1,30 @@
+# @package _global_
+# Japanese ASR baseline -- cross-lingual transfer, framework (c), on the
+# preprocessing-fixed corpus. Identical to rohan_asr except that the fixed dataset
+# root is BAKED IN (CLAUDE.md section 9: never rely on a CLI override for which
+# data a run sees). rohan_asr_3448 was trained and swept with rohan_asr plus
+# data.dataset.root_dir=../datasets/rohan_preprocessed_fixed, i.e. this config.
+#
+# Usage (eval):
+#   python eval_chunk_sweep.py +experiment=rohan_asr_fixed exp_dir=exp `
+#     exp_name=rohan_asr_3448 pretrained_model_path=exp/rohan_asr_3448/model_avg_10.pth `
+#     transfer_frontend=false ...
+defaults:
+  - override /data/dataset: rohan
+
+data:
+  modality: audio
+  lang: ja
+  max_frames: 1600
+  max_frames_val: 1600
+  dataset:
+    root_dir: C:/Users/Hiroyuki/gr_avsr/datasets/rohan_preprocessed_fixed
+
+optimizer:
+  lr: 1e-4
+  warmup_epochs: 5
+
+trainer:
+  max_epochs: 60
+
+transfer_frontend: true
