@@ -6,9 +6,12 @@
 >
 > **Status (2026-10-23): every experiment below is finished.** Eval noise is
 > now seeded per utterance ID and the twin sweep was re-run per utterance with
-> paired bootstrap intervals (2026-10-23 entry; RESULTS.md §2.3). Open: the
+> paired bootstrap intervals (2026-10-23 entry; RESULTS.md §2.3). The
+> strong-form gate test is done (2026-10-23; RESULTS.md §2.4: FAIL under the
+> pre-registered rule, so the gate is utterance-level only). Open: the write-up,
+> and the strong-form repeat after chunk-wise training augmentation. ~~Open: the
 > strong-form gate diagnostic (per-frame weight vs segmental SNR or a known
-> corruption mask) and the write-up. ~~The only open items are (1) seeding the
+> corruption mask) and the write-up.~~ (superseded 2026-10-23) ~~The only open items are (1) seeding the
 > eval noise per utterance ID before any new twin comparison (see the
 > 2026-10-08 sweep entry) and (2) the write-up.~~ (superseded 2026-10-23) The log is
 > chronological: earlier entries contain plans and "pending" notes that later
@@ -615,7 +618,7 @@ foreach ($snr in 999999, 10, 5) {
         per-frame weight varies 4–6× more within utterances than the means
         vary between them. Weak form only; the per-frame claim is not
         validated. Full tables: RESULTS.md §2.3.
-- [ ] Strong-form gate test (CLAUDE.md §5.2, Phase 2c). Inference only, the same
+- [x] Strong-form gate test (CLAUDE.md §5.2, Phase 2c). Inference only, the same
       two `model_avg_10.pth` as §2.3 (static `f543646f…`, gated `6f0291cb…`),
       plus `rohan_asr_3448` / `rohan_vsr_3448` as single-modality references.
       **Pre-registered 2026-10-23**: every setting below was committed before
@@ -705,6 +708,19 @@ foreach ($snr in 999999, 10, 5) {
         }
         python analyze_chunk_sweep.py --dir exp/chunk_sweep
         ```
+      - **DONE 2026-10-23.**
+        - Part A ran after the pre-registration commit (`dba2502`): 128/128 rebuilt inputs match the logged `audio_sha1`.
+        - Part B: the user committed `4f0c3eb`, then all 12 runs exited 0 on a clean tree at that HEAD (eval logs version_70–81, AVSR static even / gated odd, then ASR 78–79, VSR 80–81).
+        - The analysis passed all 198 integrity checks. Placebo is bit-identical to the §2.3 clean run, and ASR/VSR placebo equal §2.2 clean.
+      - **Result: FAIL under the pre-registered rule.** The gate is reported as reliability-sensitive at the utterance level only.
+        - dA (audio_chunks, k = 2) = −0.078 [−0.082, −0.072], 95 % expected sign, but the placebo is +0.037 [+0.024, +0.051], not ≈ 0.
+        - dV (video_chunks) = +0.058 [+0.042, +0.073], only 65 % expected sign, and the placebo is +0.029 [+0.013, +0.039].
+        - Placebo-corrected (descriptive): −0.115 / +0.027 (82 % / 93 % of utterances).
+        - A post-hoc check (`posthoc_chunk_placebo.py`, not pre-registered) ties the placebo offset to uniform chunk starts under-covering utterance-edge silence.
+        - CER: gated is worse than static under audio_chunks (+0.88 [+0.33, +1.45]) and both_chunks (+0.95 [+0.35, +1.57]). The video_chunks and clean gaps are < 0.5 pt.
+        - Part A: the §2.3 converging stretches are pauses. In speech, the weight follows the utterance's noise level, and ρ(w, segmental SNR) flips sign between 0 and 5 dB.
+        - Full tables: RESULTS.md §2.4.
+      - **Open decision (not acted on):** CLAUDE.md repeats this test unchanged after chunk-wise training augmentation. The placebo offset comes from mask placement, not from the gate, so it is expected to recur. Any amendment, such as making the placebo-corrected measure primary or placing chunks so that edge coverage is uniform, would have to be committed before that repeat.
 - [ ] Write up: reproduction table + static-vs-gated comparison
 
 ---

@@ -2,7 +2,8 @@
 
 Final numbers as of 2026-07-12 (extended SNR sweep added 2026-10-08, §2.1;
 ASR/VSR under the same sweep 2026-10-22, §2.2; seeded per-utterance twin sweep
-with paired bootstrap and gate diagnostic 2026-10-23, §2.3).
+with paired bootstrap and gate diagnostic 2026-10-23, §2.3; strong-form gate
+test with chunk-wise corruption 2026-10-23, §2.4).
 Reproduction target: Kondo & Tamura, "Audio-Visual Speech Recognition Based on
 Cross-Lingual Transfer Learning" (APSIPA ASC 2025),
 framework (c) — English front-ends from the 3,448 h Auto-AVSR checkpoints,
@@ -60,7 +61,9 @@ recognition ties at 10 dB (Δ0.09) and static wins clean (+0.39) and 5 dB
 robust; stationary white noise gives per-frame gating nothing temporal to
 exploit; and even 5 dB audio out-informs clean video (AVSR 15.7 vs VSR 26.4),
 so down-weighting audio has a price. **Future work:** non-stationary noise
-(held-out babble), utterance-level gating. (SNR ≤ 0 dB: done, §2.1.)
+(held-out babble), utterance-level gating. (SNR ≤ 0 dB: done, §2.1.
+Chunk-wise, eval-only white noise and video corruption: done 2026-10-23,
+§2.4. Static is still better, by 0.9 pt under audio chunks.)
 
 ### 2.1 Extended white-noise sweep (2026-10-08): clean → −10 dB
 
@@ -313,14 +316,277 @@ gated `version_55, 57, …, 69` (clean → −10 dB).
    (`gate_traces.png`), some stretches of each utterance converge to
    ≈ 0.40–0.45 at every SNR, while other stretches fan out by SNR. **Not
    verified:** these may be pauses or non-speech frames versus speech, but no
-   speech-activity or segmental-SNR reference was computed.
+   speech-activity or segmental-SNR reference was computed. (**Verified
+   2026-10-23, §2.4 Part A:** they are pauses. The across-level sd is
+   0.03–0.05 in non-speech vs 0.12–0.14 in speech frames.)
 4. **Scope.** This is the weak form only: one stationary noise type at a
    fixed target SNR per utterance. It shows that the utterance-mean weight
    tracks the utterance's noise level; it does **not** validate a per-frame
    reliability interpretation. Finding 3 shows the per-frame weight moves for
    reasons the target SNR does not explain. The strong form (per-frame weight
    against segmental SNR, or against a known per-frame corruption mask)
-   remains open.
+   remains open. (**Done 2026-10-23, §2.4: FAIL under the pre-registered
+   rule.** Finding 3's converging stretches are pauses, §2.4 Part A.)
+
+### 2.4 Strong-form gate test: speech activity and chunk-wise corruption (2026-10-23)
+
+Phase 2c, **strong form** (CLAUDE.md §5.2). Inference only, with the same two
+frozen `model_avg_10.pth` checkpoints as §2.3 (static sha256 `f543646f…`,
+gated `6f0291cb…`). `rohan_asr_3448` and `rohan_vsr_3448` `model_avg_10.pth`
+serve as single-modality references. Every corruption setting, mask rule,
+threshold and analysis choice was committed before the first real run
+(`dba2502`). All Part B runs ran at `4f0c3eb` with a clean tree. The full
+pre-registration is in the REPRODUCTION_PLAN.md strong-form entry.
+
+**Verdict (pre-registered rule): FAIL.** The per-frame gate weight is **not**
+validated as a reliability indicator. As CLAUDE.md §5.2 prescribes, the gate
+is reported as reliability-sensitive at the utterance level only (§2.3).
+
+The rule failed in two places. (1) The placebo control is not ≈ 0 for either
+measure: random masks with no corruption already give an inside-vs-outside
+difference. (2) For video, only 65 % of utterances have the expected sign
+(the rule needs ≥ 75 %). The audio measure meets the CI and sign criteria and
+fails on the placebo only.
+
+A post-hoc check (below, not part of the verdict) traces the placebo offset to
+chunk placement versus utterance-edge silence. The placebo-corrected and
+chunk-locked readouts (descriptive, pre-registered outputs) show a local
+response of the per-frame weight to corruption. They were not the decision
+rule and do not overturn it.
+
+#### Part A: speech activity and segmental SNR on the §2.3 traces (no GPU)
+
+The 8 §2.3 trace utterances, gated arm, all 8 levels (`analyze_gate_partA.py`).
+Each model input was rebuilt from (`noise_seed` 0, utterance ID) through
+`AudioTransform`/`AddNoise` and matches the logged `audio_sha1` in 128/128
+cases (8 utterances × 8 levels × 2 arms). Frame length equals video frames
+equals label length for every utterance. The static traces are exactly 0.5.
+
+- **VAD:** on clean audio, a frame is speech iff its energy ≥ utterance max − 30 dB. The threshold was fixed before looking; −20 and −40 dB are sensitivity checks only.
+- **Segmental SNR:** computed per 640-sample frame from the noise actually added.
+- **Outputs:** `auto_avsr/exp/per_utt_sweep/partA_summary.md`/`.json`, `partA_frames.csv`, `partA_traces.png`.
+
+| SNR (white) | median w, non-speech | median w, speech | speech − non-speech (median; > 0 in) | Spearman ρ(w, segmental SNR), median [min, max] |
+|---|---:|---:|---|---|
+| clean | 0.443 | 0.639 | +0.194 (8/8) | +0.709 [+0.605, +0.734] ⁽¹⁾ |
+| 20 dB | 0.471 | 0.610 | +0.131 (8/8) | +0.657 [+0.575, +0.721] |
+| 15 dB | 0.464 | 0.589 | +0.120 (8/8) | +0.604 [+0.562, +0.702] |
+| 10 dB | 0.445 | 0.549 | +0.096 (8/8) | +0.545 [+0.462, +0.659] |
+| 5 dB | 0.423 | 0.474 | +0.043 (8/8) | +0.292 [+0.153, +0.546] |
+| 0 dB | 0.404 | 0.389 | −0.017 (2/8) | −0.241 [−0.556, +0.038] |
+| −5 dB | 0.393 | 0.333 | −0.061 (0/8) | −0.627 [−0.695, −0.517] |
+| −10 dB | 0.389 | 0.307 | −0.081 (0/8) | −0.733 [−0.795, −0.613] |
+
+⁽¹⁾ Clean has no noise, so this is ρ against frame speech energy.
+
+**Findings (Part A).**
+
+1. **The converging stretches of §2.3 finding 3 are pauses.** Take each
+   frame's weight and compute its sd across the 8 levels. That sd is
+   0.115–0.136 in speech frames and 0.026–0.045 in non-speech frames, per
+   utterance. The per-utterance AUC (sd higher in speech) is 0.93–0.98.
+   Non-speech weight stays within 0.38–0.49 at every level.
+2. **In speech, the weight follows the utterance's noise level, in both
+   directions.** Speech-frame weight runs from 0.31 (−10 dB) to 0.64 (clean).
+   The speech − non-speech difference changes sign between 0 and 5 dB. This
+   holds at all three VAD thresholds (−20/−30/−40 dB: −0.077/−0.081/−0.080 at
+   −10 dB, +0.174/+0.194/+0.173 clean).
+3. **The per-frame weight does not track segmental SNR monotonically.** At
+   ≤ 0 dB the correlation is negative: within an utterance, speech frames have
+   the higher segmental SNR but get the *lower* audio weight. Descriptively,
+   the weight behaves like speech activity × utterance noise level. In pauses
+   it sits near 0.4; in speech it moves up or down with the noise level.
+4. **Scope (as pre-registered).** Under stationary white noise, segmental SNR
+   is driven by speech energy, so it is confounded with speech activity.
+   Part A cannot separate reliability from speech activity.
+
+#### Part B: chunk-wise corruption with known per-frame masks
+
+`decode.chunk_condition` adds seeded, eval-only corruption in the test
+transforms. Draws are a function of (`noise_seed` 0, utterance ID, stream)
+only. With the flag off, the pipelines are bit-identical to HEAD, including
+RNG consumption.
+
+- **Chunks:** per stream, 1–3 chunks of 10–25 frames (0.4–1.0 s) with a uniform start.
+- **Audio:** NoiseX-92 white (`white_16k.wav`) at −5 dB relative to the whole clean utterance, added inside the chunks only, before `_instance_layer_norm`.
+- **Video:** on the 88×88 mouth crop, each chunk is either Gaussian blur (σ = 4, kernel 25) or an occluder (p = ½ each).
+  - The occluder is an object from the eval half of the NatOcc COCO set, 35×35 px.
+  - It sits at the centre (42, 36) ± (20, 10) px, fixed for the whole chunk.
+- **Eval-only from now on:** white noise, blur and the eval-half occluders.
+- **Analysis:** boundary exclusion k = 2, the primary reading.
+- **Coverage:** audio and video each corrupt 20 % of frames on average (0.207 / 0.200).
+  - Frame categories: audio-only 15.8 %, video-only 15.0 %, both 4.0 %, neither 65.2 %.
+  - The two streams overlap in 223/400 utterances.
+  - Video-corrupted frames: 6,907 occluded, 6,391 blurred.
+
+Runs:
+
+- AVSR static and gated × {placebo, audio_chunks, video_chunks, both_chunks}.
+- ASR × {placebo, audio_chunks}.
+- VSR × {placebo, video_chunks}.
+- Placebo draws and logs the both_chunks masks but corrupts nothing.
+
+Outputs are in `auto_avsr/exp/chunk_sweep/`:
+
+- Per run, `<exp_name>/<condition>/`: rows CSV, `frames.npz` (per-frame `gate_w_audio` and both masks for all 400 utterances) and `meta.json`.
+- `summary.md`/`summary.json`: all tables below and 198 integrity checks.
+- Plots: `gate_chunk_measures.png`, `gate_chunk_locked.png`, `gate_chunk_traces.png`.
+- Log: `chunk_sweep.log`.
+
+To reproduce, use the commands in the REPRODUCTION_PLAN.md strong-form
+entry (~3 h).
+
+**Integrity (all 198 passed).**
+
+- All 12 runs used the same masks.
+- The static arm reads exactly 0.5 at every frame in all four conditions.
+- The twins saw bit-identical audio and video inputs (SHA-1, 400/400) in every condition.
+- Corruption is applied only where the condition says.
+- VSR video equals AVSR video.
+- Placebo is bit-identical to the §2.3 clean run (inputs, edits, CER 0.031336478888988495 / 0.03524336591362953, gate 0.5 / 0.5370424389839172).
+- ASR/VSR placebo equals §2.2 clean (3.87 / 26.36).
+- Eval `hparams.yaml` of the twins differ only in `exp_name`, `pretrained_model_path` and `fusion_gate_freeze`; across conditions they differ only in `chunk_condition`.
+- Every run used the same git HEAD with `dirty == false`.
+
+**Gate response (gated arm).**
+
+- **Measures:** dA = mean w in audio-only-corrupted frames − mean w in
+  uncorrupted ("neither") frames, per utterance; expected < 0. dV = the same
+  for video-only frames; expected > 0.
+- **Statistics:** median [95 % bootstrap CI, B = 10,000]. "Share" is the
+  share of utterances with the expected sign. AUC is the pooled frame AUC in
+  the expected direction (0.5 = none).
+- **Placebo:** the placebo run read with the same masks.
+- **Corrected:** the per-utterance difference-in-differences against the
+  placebo (same utterance, same frames), so effects present in both runs
+  cancel.
+
+| condition | measure | k | run: median [CI] | share | AUC | placebo: median [CI] | share | corrected: median [CI] | share |
+|---|---|---:|---|---:|---:|---|---:|---|---:|
+| audio_chunks | dA | 2 | **−0.078** [−0.082, −0.072] | 95 % | 0.675 | +0.037 [+0.024, +0.051] | 36 % | −0.115 [−0.131, −0.104] | 82 % |
+| audio_chunks | dA | 0 | −0.072 [−0.075, −0.066] | 96 % | 0.662 | +0.030 [+0.023, +0.042] | 36 % | −0.104 [−0.114, −0.091] | 83 % |
+| video_chunks | dV | 2 | **+0.058** [+0.042, +0.073] | 65 % | 0.604 | +0.029 [+0.013, +0.039] | 57 % | +0.027 [+0.024, +0.030] | 93 % |
+| video_chunks | dV | 0 | +0.051 [+0.033, +0.064] | 65 % | 0.596 | +0.022 [+0.009, +0.036] | 57 % | +0.024 [+0.022, +0.027] | 93 % |
+| both_chunks | dA | 2 | −0.069 [−0.075, −0.064] | 89 % | 0.658 | +0.051 [+0.036, +0.061] | 36 % | −0.118 [−0.134, −0.103] | 79 % |
+| both_chunks | dV | 2 | +0.053 [+0.031, +0.075] | 65 % | 0.597 | +0.028 [+0.003, +0.045] | 56 % | +0.027 [+0.023, +0.030] | 86 % |
+
+Bold = the two decision measures. **Rule (k = 2).** Each decision measure
+must meet three criteria:
+
+- Its CI excludes 0 on the expected side.
+- At least 75 % of utterances have the expected sign.
+- The placebo is ≈ 0: its CI includes 0, or |placebo median| ≤ 0.2 × |run median|.
+
+How each measure scored:
+
+- **dA** passes the first two criteria. It fails the third: the placebo is
+  +0.037 with a CI excluding 0, and 0.037 > 0.2 × 0.078 = 0.016.
+- **dV** passes the CI criterion but fails the share criterion (65 %) and the
+  placebo criterion (+0.029, CI excluding 0).
+
+Per-utterance n at k = 2: 400 (audio_chunks, video_chunks), 388 / 379
+(both_chunks dA / dV). The k = 0 rows for both_chunks are in `summary.md`.
+
+**Why the placebo is not ≈ 0 (POST HOC, exploratory; not pre-registered, not
+part of the verdict).** `posthoc_chunk_placebo.py` reads the gated placebo
+frames. Uniform chunk starts rarely cover the first and last ~10 frames of an
+utterance, which are mostly leading and trailing silence, where the clean gate
+weight is low (Part A).
+
+| distance from the nearest utterance edge | 0–4 frames | 5–9 | 10–24 | ≥ 25 |
+|---|---:|---:|---:|---:|
+| median w (gated placebo = clean input) | 0.409 | 0.398 | 0.478 | 0.581 |
+| P(frame inside any mask) | 0.094 | 0.209 | 0.364 | 0.404 |
+
+The uncorrupted ("neither") frames are therefore enriched with low-weight
+silence, and w(chunk) − w(neither) > 0 without any corruption. Restricting to
+frames ≥ 25 from both edges (four-category reading, k = 0) shrinks the
+placebo:
+
+- dA: +0.045 → +0.011.
+- dV: +0.027 → +0.006.
+
+The corrupted runs then read dA −0.111 (audio_chunks) and dV +0.038
+(video_chunks). The residual placebo offset (~+0.01) is unexplained; pauses
+inside the utterance are a plausible but untested cause.
+
+**Descriptive readouts (pre-registered outputs, not the decision rule).**
+
+1. **Chunk-locked response** (`gate_chunk_locked.png`; mean w(condition) −
+   w(placebo) on the same frames, aligned to the chunk onset or offset).
+   - Audio chunks:
+     - The weight starts falling ~2 frames before onset (−0.025 at t = −2).
+     - It reaches −0.105 by frame +3 and holds at −0.10 to −0.12 through the chunk.
+     - It recovers within ~3 frames after the offset.
+     - A residual of ≈ −0.02 remains outside the chunks: an utterance-wide shift on top of the local response.
+   - Video chunks: the weight rises to a plateau of +0.03 over ~5 frames, with a residual of ≈ +0.003 outside.
+   - The 1–3-frame spill at each edge matches the encoders' context mixing. The pre-registered k = 2 exclusion is about the right width.
+2. **The audio response is ~4× the video response** (corrected −0.115 vs
+   +0.027). The two corruptions are not matched in severity: chunk corruption
+   costs ASR +30 pt (3.87 → 34.00) and VSR +10 pt (26.36 → 36.50). The ratio
+   says nothing about the gate's relative sensitivity at equal damage.
+3. **Both streams corrupted** (both_chunks, frames in both masks, k = 2): the
+   both − neither difference is −0.048 [−0.058, −0.039] (placebo +0.071). The
+   gate moves toward video, so the audio corruption dominates.
+4. **By video type** (video_chunks, k = 2): blur +0.084 [+0.055, +0.112]
+   (placebo +0.039), occlusion +0.054 [+0.026, +0.072] (placebo +0.037).
+5. **Traces** (`gate_chunk_traces.png`, the 8 §2.3 trace utterances).
+   - In speech, the response appears as a step inside the chunk.
+   - In pauses (w ≈ 0.35–0.45), neither corruption moves the weight visibly. Examples: the ROHAN4600_3191 video chunk at 3.8–4.5 s and the ROHAN4600_4174 audio chunk at 0.1–0.5 s.
+   - This was seen in 8 utterances and not quantified. It is consistent with Part A.
+
+**CER (%).** Δ in pt, with a paired bootstrap 95 % CI over utterances
+(B = 10,000, one resample shared by all rows). ASR and VSR each ran under
+the same corruption of their own stream; the condition used is in
+parentheses. "Best single" = the better of those two.
+
+| condition | AVSR static | AVSR gated | gated − static [CI] | gated better / worse / tie | ASR | VSR | static − best single [CI] | gated − best single [CI] |
+|---|---:|---:|---|---|---:|---:|---|---|
+| placebo (clean) | 3.13 | 3.52 | +0.39 [+0.10, +0.69] | 61 / 89 / 250 | 3.87 (placebo) | 26.36 (placebo) | −0.74 [−1.14, −0.36] vs ASR | −0.35 [−0.80, +0.08] |
+| audio_chunks | **11.69** | 12.57 | +0.88 [+0.33, +1.45] | 123 / 161 / 116 | 34.00 (audio_chunks) | 26.36 (placebo) | −14.67 [−15.76, −13.60] vs VSR | −13.79 [−14.89, −12.69] |
+| video_chunks | 3.60 | 4.00 | +0.41 [+0.07, +0.75] | 67 / 92 / 241 | 3.87 (placebo) | 36.50 (video_chunks) | −0.28 [−0.68, +0.11] vs ASR | +0.13 [−0.33, +0.59] |
+| both_chunks | **13.60** | 14.55 | +0.95 [+0.35, +1.57] | 124 / 167 / 109 | 34.00 (audio_chunks) | 36.50 (video_chunks) | −20.40 [−21.69, −19.12] vs ASR | −19.44 [−20.77, −18.15] |
+
+Bold = better arm with |Δ| ≥ 0.5 pt and a CI excluding 0. The placebo row
+reproduces the §2.3 clean result bit for bit. Eval logs
+(`auto_avsr/lightning_logs/`):
+
+- AVSR static: version_70 / 72 / 74 / 76 (placebo, audio, video, both).
+- AVSR gated: version_71 / 73 / 75 / 77.
+- ASR: version_78 / 79 (placebo, audio).
+- VSR: version_80 / 81 (placebo, video).
+
+**Findings (Part B CER).**
+
+1. **Under chunk-wise audio corruption, the gated arm is worse.** Chunk-wise
+   corruption is the non-stationary case that per-frame gating was meant to
+   exploit (§2, future work).
+   - Static is better by +0.88 pt [+0.33, +1.45] (audio_chunks) and +0.95 pt [+0.35, +1.57] (both_chunks). Both gaps exceed 0.5 pt with CIs excluding 0.
+   - The video_chunks (+0.41) and clean (+0.39) gaps are below 0.5 pt and are not called, even though their CIs exclude 0 (CLAUDE.md §8).
+   - The intervals cover test-utterance sampling only. There is one training seed per arm, and neither arm saw chunk-wise corruption in training (babble, one SNR per utterance).
+2. **No arm is worse than the better single modality in any condition.**
+   - Fusion beats it by 14–20 pt under audio and both-stream corruption.
+   - Under video corruption, both arms tie clean ASR (CIs span 0).
+3. **Video chunks cost fusion ~0.5 pt** (static 3.13 → 3.60, gated 3.52 →
+   4.00), although they cost VSR 10 pt. **Audio chunks cost fusion
+   8.6–9.1 pt** (static 3.13 → 11.69, gated 3.52 → 12.57).
+
+**Scope of claims.**
+
+- **What this test supports:** an utterance-level reliability interpretation of the gate (§2.3).
+- **What it does not support:** a per-frame one.
+- **Why it failed:** the control failed, and for video so did the consistency criterion. The per-frame weight does change locally where corruption is applied (descriptive readouts 1–5), but the pre-registered test cannot certify that. Per CLAUDE.md §5.2 it is not re-scored with a different rule.
+- **What happens next:** CLAUDE.md requires the test to be repeated unchanged after chunk-wise training augmentation, and this result is that run's pre-augmentation baseline.
+- **Open caveat for the repeat:** the placebo offset comes from mask placement against the clean gate's speech/pause pattern, so it is expected to recur in the repeat regardless of what the gate learns. Whether to amend the rule before that run is an open decision. Nothing has been changed.
+
+**Divergences from CLAUDE.md §5.2 (all recorded in the plan entry before
+the runs).**
+
+- ASR/VSR placebo runs were added, as clean per-utterance single-modality references.
+- The dirty-tree check ignores untracked eval logs under `auto_avsr/lightning_logs/`, because each run writes one.
+- ASR receives raw-length audio, while AVSR audio is cut to 640 × video frames before the transform. The seeded `AddNoise` crop offset and reference power depend on length, so ASR gets the same noise file, SNR rule and chunk spans but a different noise realisation inside the chunks. This is a near-identical input, not a bit-identical one.
+- "Holds clearly" and "placebo ≈ 0" were made operational as the rule above.
+- The occluder split is by image, not by category: the two halves share COCO categories.
 
 ## 3. VSR ablations (why the 26.4 vs 19.7 gap is the video data)
 
@@ -361,6 +627,9 @@ checkpoint, dataset root, `snr_target` and `noise_filename` actually used.
 | VSR 8-level sweep (clean, 20 … −10 dB) | version_31 | version_46 – 53 |
 | AVSR per-utterance seeded sweep, static (clean … −10 dB) | version_41 | version_54, 56, 58, 60, 62, 64, 66, 68 |
 | AVSR per-utterance seeded sweep, gated (clean … −10 dB) | version_42 | version_55, 57, 59, 61, 63, 65, 67, 69 |
+| Chunk sweep, AVSR static (placebo, audio, video, both) | version_41 | version_70, 72, 74, 76 |
+| Chunk sweep, AVSR gated (placebo, audio, video, both) | version_42 | version_71, 73, 75, 77 |
+| Chunk sweep, ASR (placebo, audio) / VSR (placebo, video) | (2026-07-08 run) / version_31 | version_78, 79 / version_80, 81 |
 
 ## 5. Documented deviations from the paper
 
