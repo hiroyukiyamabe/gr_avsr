@@ -1,0 +1,36 @@
+{
+  "arm": "rohan_avsr_3448_gated",
+  "snr_target": 0,
+  "noise_filename": "C:\\Users\\Hiroyuki\\gr_avsr\\noise_datasets\\white_16k.wav",
+  "noise_sha256": "b031f778cc3b1f7b5617ae21718ec0e950006e77731407b6d8597163055a0e50",
+  "noise_seed": 0,
+  "pretrained_model_path": "C:\\Users\\Hiroyuki\\gr_avsr\\auto_avsr\\exp\\rohan_avsr_3448_gated\\model_avg_10.pth",
+  "checkpoint_sha256": "6f0291cb75c16ddd7c66f61fd0c3c4e2c1a558ad857924740de81f9c7ee8ed02",
+  "fusion_gate_freeze": false,
+  "dataset_root": "C:/Users/Hiroyuki/gr_avsr/datasets/rohan_preprocessed_fixed",
+  "test_file": "rohan_test_transcript_lengths.csv",
+  "n_utterances": 400,
+  "limit_test_batches": null,
+  "cer_logged": 0.2410874217748642,
+  "gate_w_audio_logged": 0.3922022879123688,
+  "cer_from_rows": 0.24108741657170762,
+  "edit_distance_total": 2962,
+  "ref_chars_total": 12286,
+  "frames_total": 67713,
+  "trace_utterances": [
+    "ROHAN4600_2664",
+    "ROHAN4600_2549",
+    "ROHAN4600_4174",
+    "ROHAN4600_4519",
+    "ROHAN4600_2086",
+    "ROHAN4600_3717",
+    "ROHAN4600_3506",
+    "ROHAN4600_3191"
+  ],
+  "eval_log_dir": "C:\\Users\\Hiroyuki\\gr_avsr\\auto_avsr\\lightning_logs\\version_65",
+  "git": {
+    "head": "9f404f9242cdb7e88d79ba8d7c1de8c15f9656b5",
+    "dirty": true
+  },
+  "finished": "2026-10-23T13:22:05"
+}

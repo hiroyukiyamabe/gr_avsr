@@ -13,11 +13,38 @@ noise_datasets/
 #ignore the original pipelines
 auto_avsr_original_do_not_touch/
 
-#ignore the trained checkpoints
-auto_avsr/exp/
+#ignore the trained checkpoints and training dirs; track only the small analysis
+#outputs the results depend on (a directory pattern cannot be re-included, so
+#ignore the contents instead)
+auto_avsr/exp/*
+!auto_avsr/exp/per_utt_sweep/
+!auto_avsr/exp/chunk_sweep/
+!auto_avsr/exp/snr_sweep_*.csv
+!auto_avsr/exp/snr_sweep_*.png
+!auto_avsr/exp/white_sweep_8lvl.log
+!auto_avsr/exp/unimodal_sweep_8lvl.log
+#never checkpoints, even inside the re-included dirs
+auto_avsr/exp/**/*.pth
+auto_avsr/exp/**/*.ckpt
 
 #ignore the original checkpoints
 original_checkpoints/
 
 #ignore the venv
 avsr/
+
+#published papers (redistribution); the index stays tracked
+papers/*.pdf
+
+#local agent and editor state
+whole_claude_code_promt.txt
+.claude/settings.local.json
+
+#crash logs and old run logs (no doc cites them)
+crash.txt.txt
+failure_output_second.txt
+training_failure_output.txt
+vsr_training_error_260702.txt
+evaluation2.txt
+evaluation_results.txt
+06_27_fine_tuning.txt

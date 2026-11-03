@@ -511,12 +511,17 @@ foreach ($snr in 999999, 10, 5) {
       (1) AVSR noise-robustness claim reproduced (−59%/−64% relative vs
       paper's −54%/−60%); (2) every audio-bearing row matches → pipeline
       fidelity proven, VSR gap isolated to video data; (3) 5 dB audio still
-      out-informs clean video (AVSR 15.7 < VSR 26.4); (4) gate mechanism
-      works but is redundant under stationary noise at these SNRs.
+      out-informs clean video (AVSR 15.7 < VSR 26.4); (4) ~~gate mechanism
+      works~~ the gate responds at the utterance level (per-frame
+      interpretation not validated, RESULTS §2.4; corrected 2026-10-24,
+      overclaim under CLAUDE.md §5) but is redundant under stationary noise at these SNRs.
       - AVSR-gated DONE (2026-07-12, white noise verified in eval logs
         version_16/17): **10.70% @ 10 dB (gate_w_audio 0.489), 16.28% @ 5 dB
         (0.443)**; with clean 3.52% (0.537) the gate weight falls
-        monotonically with SNR — mechanism CONFIRMED. Numbers plausible vs
+        monotonically with SNR — ~~mechanism CONFIRMED~~ utterance-level
+        response confirmed (RESULTS §2.3); per-frame interpretation not
+        validated (RESULTS §2.4) (corrected 2026-10-24: overclaim under
+        CLAUDE.md §5 once the strong-form test failed). Numbers plausible vs
         paper (11.95/16.11 @ 19.2 kHz): 16 kHz is the more robust rate per
         their own ASR rows. No train/test noise overlap (train = babble,
         eval = white). Static @ 10/5 dB + ASR rows still pending — static
@@ -524,8 +529,10 @@ foreach ($snr in 999999, 10, 5) {
       - AVSR-static noise pair DONE (2026-07-12, version_18/19 validated:
         right ckpt, white noise, gate_w_audio = 0.5 exact): **10.79% @ 10 dB,
         15.73% @ 5 dB**. TWIN VERDICT: tie @ 10 dB (Δ0.09), static wins 5 dB
-        (+0.55) and clean (+0.39) — the gate re-weights correctly (mechanism
-        confirmed) but yields NO recognition benefit under stationary white
+        (+0.55) and clean (+0.39) — the gate re-weights correctly (~~mechanism
+        confirmed~~ utterance-level response confirmed, per-frame
+        interpretation not validated, RESULTS §2.4; corrected 2026-10-24,
+        overclaim under CLAUDE.md §5) but yields NO recognition benefit under stationary white
         noise. Robustness is attributable to noise-augmented AVSR training
         itself, not the gate. See memory noise-sensitive-fusion for the full
         interpretation + future-work directions. ASR white-noise rows remain
@@ -712,6 +719,7 @@ foreach ($snr in 999999, 10, 5) {
         - Part A ran after the pre-registration commit (`dba2502`): 128/128 rebuilt inputs match the logged `audio_sha1`.
         - Part B: the user committed `4f0c3eb`, then all 12 runs exited 0 on a clean tree at that HEAD (eval logs version_70–81, AVSR static even / gated odd, then ASR 78–79, VSR 80–81).
         - The analysis passed all 198 integrity checks. Placebo is bit-identical to the §2.3 clean run, and ASR/VSR placebo equal §2.2 clean.
+        - Commit `6b11b45` ("Enforce a harsher test") only records the results and adds `posthoc_chunk_placebo.py`; no setting, threshold or analysis code changed between `dba2502` and the runs. (Added 2026-10-24, verified with `git diff dba2502 6b11b45 --stat -- auto_avsr/`: only `lightning_logs/version_70–81` and the post-hoc script. The intermediate `4f0c3eb` only added the §5.2 text to CLAUDE.md and touched `papers/paperlist.xlsx`.)
       - **Result: FAIL under the pre-registered rule.** The gate is reported as reliability-sensitive at the utterance level only.
         - dA (audio_chunks, k = 2) = −0.078 [−0.082, −0.072], 95 % expected sign, but the placebo is +0.037 [+0.024, +0.051], not ≈ 0.
         - dV (video_chunks) = +0.058 [+0.042, +0.073], only 65 % expected sign, and the placebo is +0.029 [+0.013, +0.039].

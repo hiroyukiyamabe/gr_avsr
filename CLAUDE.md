@@ -56,6 +56,9 @@ Rules for the gate:
   degraded at the same time or alternately. Training-time augmentation is random; any
   evaluation-time corruption must be seeded and identical across arms. When augmentation is
   not the factor under study, every compared arm trains with the same augmentation.
+  The inherited recipe already applies `AdaptiveTimeMask` to both streams independently
+  in training; it stays in every arm, and the AV-RelScore-style augmentation is added on
+  top of it.
 - **Keep train and eval corruption disjoint.** Noise types, occluder images and corruption
   settings used for evaluation must not be used in training. Record which is which in the
   config, not only in code.
@@ -123,7 +126,7 @@ per-utterance test needs a new inference-only sweep that logs per utterance. Rul
   Report it as such. The strong form (per-frame weight against segmental SNR or a known
   per-frame corruption mask) is a separate, later test.
 
-### 5.2 Current task: strong-form gate test (inference only)
+### 5.2 Done 2026-10-23 (RESULTS.md §2.4): FAIL under the pre-registered rule. Strong-form gate test (inference only)
 
 §5.1 showed that the utterance-mean audio weight is ordered by target SNR. It did not
 show that the per-frame weight tracks per-frame reliability, because uniform white noise
@@ -251,16 +254,6 @@ General rules (all of §5.1's rules still apply):
 - If they do not hold, report the gate as reliability-sensitive at the utterance level
   only (§5.1). This test is then repeated unchanged after chunk-wise training
   augmentation.
-
----
-
-Related edits elsewhere in CLAUDE.md:
-
-- §5.1 heading: change "Current task" to "Done 2026-10-23 (RESULTS.md §2.3)".
-- §8, after the 0.5 pt rule, add: "When a paired-bootstrap CI is available, report it,
-  but a gap below ~0.5 pt is still not called a win even if its CI excludes 0: the CI
-  covers test-utterance sampling only, not training-seed variance."
-
 
 ## 6. Pseudo-labelling
 

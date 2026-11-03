@@ -1,0 +1,846 @@
+{
+  "checks": [
+    "400 unique test utterances per run",
+    "static clean: same utterances, same order",
+    "static clean: ref_len and n_frames match",
+    "static clean: full test set",
+    "static clean: rows reproduce logged CER",
+    "static clean: rows reproduce logged gate_w_audio",
+    "static 20 dB: same utterances, same order",
+    "static 20 dB: ref_len and n_frames match",
+    "static 20 dB: full test set",
+    "static 20 dB: rows reproduce logged CER",
+    "static 20 dB: rows reproduce logged gate_w_audio",
+    "static 15 dB: same utterances, same order",
+    "static 15 dB: ref_len and n_frames match",
+    "static 15 dB: full test set",
+    "static 15 dB: rows reproduce logged CER",
+    "static 15 dB: rows reproduce logged gate_w_audio",
+    "static 10 dB: same utterances, same order",
+    "static 10 dB: ref_len and n_frames match",
+    "static 10 dB: full test set",
+    "static 10 dB: rows reproduce logged CER",
+    "static 10 dB: rows reproduce logged gate_w_audio",
+    "static 5 dB: same utterances, same order",
+    "static 5 dB: ref_len and n_frames match",
+    "static 5 dB: full test set",
+    "static 5 dB: rows reproduce logged CER",
+    "static 5 dB: rows reproduce logged gate_w_audio",
+    "static 0 dB: same utterances, same order",
+    "static 0 dB: ref_len and n_frames match",
+    "static 0 dB: full test set",
+    "static 0 dB: rows reproduce logged CER",
+    "static 0 dB: rows reproduce logged gate_w_audio",
+    "static -5 dB: same utterances, same order",
+    "static -5 dB: ref_len and n_frames match",
+    "static -5 dB: full test set",
+    "static -5 dB: rows reproduce logged CER",
+    "static -5 dB: rows reproduce logged gate_w_audio",
+    "static -10 dB: same utterances, same order",
+    "static -10 dB: ref_len and n_frames match",
+    "static -10 dB: full test set",
+    "static -10 dB: rows reproduce logged CER",
+    "static -10 dB: rows reproduce logged gate_w_audio",
+    "gated clean: same utterances, same order",
+    "gated clean: ref_len and n_frames match",
+    "gated clean: full test set",
+    "gated clean: rows reproduce logged CER",
+    "gated clean: rows reproduce logged gate_w_audio",
+    "gated 20 dB: same utterances, same order",
+    "gated 20 dB: ref_len and n_frames match",
+    "gated 20 dB: full test set",
+    "gated 20 dB: rows reproduce logged CER",
+    "gated 20 dB: rows reproduce logged gate_w_audio",
+    "gated 15 dB: same utterances, same order",
+    "gated 15 dB: ref_len and n_frames match",
+    "gated 15 dB: full test set",
+    "gated 15 dB: rows reproduce logged CER",
+    "gated 15 dB: rows reproduce logged gate_w_audio",
+    "gated 10 dB: same utterances, same order",
+    "gated 10 dB: ref_len and n_frames match",
+    "gated 10 dB: full test set",
+    "gated 10 dB: rows reproduce logged CER",
+    "gated 10 dB: rows reproduce logged gate_w_audio",
+    "gated 5 dB: same utterances, same order",
+    "gated 5 dB: ref_len and n_frames match",
+    "gated 5 dB: full test set",
+    "gated 5 dB: rows reproduce logged CER",
+    "gated 5 dB: rows reproduce logged gate_w_audio",
+    "gated 0 dB: same utterances, same order",
+    "gated 0 dB: ref_len and n_frames match",
+    "gated 0 dB: full test set",
+    "gated 0 dB: rows reproduce logged CER",
+    "gated 0 dB: rows reproduce logged gate_w_audio",
+    "gated -5 dB: same utterances, same order",
+    "gated -5 dB: ref_len and n_frames match",
+    "gated -5 dB: full test set",
+    "gated -5 dB: rows reproduce logged CER",
+    "gated -5 dB: rows reproduce logged gate_w_audio",
+    "gated -10 dB: same utterances, same order",
+    "gated -10 dB: ref_len and n_frames match",
+    "gated -10 dB: full test set",
+    "gated -10 dB: rows reproduce logged CER",
+    "gated -10 dB: rows reproduce logged gate_w_audio",
+    "clean: both arms saw bit-identical audio for all 400 utterances",
+    "clean: static arm reads exactly 0.5 at every frame",
+    "clean: eval hparams differ only in ['exp_name', 'model.audiovisual_backbone.fusion_gate_freeze', 'pretrained_model_path']",
+    "20 dB: both arms saw bit-identical audio for all 400 utterances",
+    "20 dB: static arm reads exactly 0.5 at every frame",
+    "20 dB: noise was applied (audio differs from clean)",
+    "20 dB: eval hparams differ only in ['exp_name', 'model.audiovisual_backbone.fusion_gate_freeze', 'pretrained_model_path']",
+    "15 dB: both arms saw bit-identical audio for all 400 utterances",
+    "15 dB: static arm reads exactly 0.5 at every frame",
+    "15 dB: noise was applied (audio differs from clean)",
+    "15 dB: eval hparams differ only in ['exp_name', 'model.audiovisual_backbone.fusion_gate_freeze', 'pretrained_model_path']",
+    "10 dB: both arms saw bit-identical audio for all 400 utterances",
+    "10 dB: static arm reads exactly 0.5 at every frame",
+    "10 dB: noise was applied (audio differs from clean)",
+    "10 dB: eval hparams differ only in ['exp_name', 'model.audiovisual_backbone.fusion_gate_freeze', 'pretrained_model_path']",
+    "5 dB: both arms saw bit-identical audio for all 400 utterances",
+    "5 dB: static arm reads exactly 0.5 at every frame",
+    "5 dB: noise was applied (audio differs from clean)",
+    "5 dB: eval hparams differ only in ['exp_name', 'model.audiovisual_backbone.fusion_gate_freeze', 'pretrained_model_path']",
+    "0 dB: both arms saw bit-identical audio for all 400 utterances",
+    "0 dB: static arm reads exactly 0.5 at every frame",
+    "0 dB: noise was applied (audio differs from clean)",
+    "0 dB: eval hparams differ only in ['exp_name', 'model.audiovisual_backbone.fusion_gate_freeze', 'pretrained_model_path']",
+    "-5 dB: both arms saw bit-identical audio for all 400 utterances",
+    "-5 dB: static arm reads exactly 0.5 at every frame",
+    "-5 dB: noise was applied (audio differs from clean)",
+    "-5 dB: eval hparams differ only in ['exp_name', 'model.audiovisual_backbone.fusion_gate_freeze', 'pretrained_model_path']",
+    "-10 dB: both arms saw bit-identical audio for all 400 utterances",
+    "-10 dB: static arm reads exactly 0.5 at every frame",
+    "-10 dB: noise was applied (audio differs from clean)",
+    "-10 dB: eval hparams differ only in ['exp_name', 'model.audiovisual_backbone.fusion_gate_freeze', 'pretrained_model_path']",
+    "static 20 dB: hparams differ from clean only in snr_target",
+    "static 15 dB: hparams differ from clean only in snr_target",
+    "static 10 dB: hparams differ from clean only in snr_target",
+    "static 5 dB: hparams differ from clean only in snr_target",
+    "static 0 dB: hparams differ from clean only in snr_target",
+    "static -5 dB: hparams differ from clean only in snr_target",
+    "static -10 dB: hparams differ from clean only in snr_target",
+    "static: one checkpoint across all levels",
+    "gated 20 dB: hparams differ from clean only in snr_target",
+    "gated 15 dB: hparams differ from clean only in snr_target",
+    "gated 10 dB: hparams differ from clean only in snr_target",
+    "gated 5 dB: hparams differ from clean only in snr_target",
+    "gated 0 dB: hparams differ from clean only in snr_target",
+    "gated -5 dB: hparams differ from clean only in snr_target",
+    "gated -10 dB: hparams differ from clean only in snr_target",
+    "gated: one checkpoint across all levels",
+    "all runs: same noise file, seed and dataset",
+    "the two arms use different checkpoints",
+    "static clean: CER 0.031336478888988495 and gate 0.5 bit-identical to the earlier sweep (logging changes nothing)",
+    "gated clean: CER 0.03524336591362953 and gate 0.5370424389839172 bit-identical to the earlier sweep (logging changes nothing)"
+  ],
+  "cer": [
+    {
+      "snr": 999999,
+      "cer_static": 3.133648054696402,
+      "cer_gated": 3.524336643333876,
+      "delta": 0.39068858863747363,
+      "ci_lo": 0.09113981083464702,
+      "ci_hi": 0.6919338848075385,
+      "p_boot_gated_worse": 0.995,
+      "utts_gated_better": 61,
+      "utts_gated_worse": 89,
+      "utts_tie": 250
+    },
+    {
+      "snr": 20,
+      "cer_static": 5.461500895328015,
+      "cer_gated": 5.363828748168648,
+      "delta": -0.09767214715936806,
+      "ci_lo": -0.5214469311380528,
+      "ci_hi": 0.3372309590940768,
+      "p_boot_gated_worse": 0.3128,
+      "utts_gated_better": 117,
+      "utts_gated_worse": 95,
+      "utts_tie": 188
+    },
+    {
+      "snr": 15,
+      "cer_static": 8.000976721471593,
+      "cer_gated": 7.235878235389874,
+      "delta": -0.7650984860817195,
+      "ci_lo": -1.2488138885354125,
+      "ci_hi": -0.29800043363673545,
+      "p_boot_gated_worse": 0.001,
+      "utts_gated_better": 151,
+      "utts_gated_worse": 107,
+      "utts_tie": 142
+    },
+    {
+      "snr": 10,
+      "cer_static": 10.63812469477454,
+      "cer_gated": 10.402083672472733,
+      "delta": -0.23604102230180696,
+      "ci_lo": -0.7602306603252723,
+      "ci_hi": 0.2893284920372471,
+      "p_boot_gated_worse": 0.1874,
+      "utts_gated_better": 146,
+      "utts_gated_worse": 137,
+      "utts_tie": 117
+    },
+    {
+      "snr": 5,
+      "cer_static": 15.399641868793749,
+      "cer_gated": 16.303109230017906,
+      "delta": 0.9034673612241584,
+      "ci_lo": 0.25060175057205325,
+      "ci_hi": 1.5471317809116636,
+      "p_boot_gated_worse": 0.9954,
+      "utts_gated_better": 140,
+      "utts_gated_worse": 176,
+      "utts_tie": 84
+    },
+    {
+      "snr": 0,
+      "cer_static": 23.18899560475338,
+      "cer_gated": 24.10874165717076,
+      "delta": 0.9197460524173834,
+      "ci_lo": 0.08181933478038488,
+      "ci_hi": 1.7335480837951518,
+      "p_boot_gated_worse": 0.9856,
+      "utts_gated_better": 153,
+      "utts_gated_worse": 191,
+      "utts_tie": 56
+    },
+    {
+      "snr": -5,
+      "cer_static": 30.107439361875304,
+      "cer_gated": 30.131857398665147,
+      "delta": 0.02441803678984167,
+      "ci_lo": -0.730724205866002,
+      "ci_hi": 0.7767484952469667,
+      "p_boot_gated_worse": 0.5213,
+      "utts_gated_better": 153,
+      "utts_gated_worse": 147,
+      "utts_tie": 100
+    },
+    {
+      "snr": -10,
+      "cer_static": 32.850398827934235,
+      "cer_gated": 32.20739052580173,
+      "delta": -0.6430083021325084,
+      "ci_lo": -1.4362131962320237,
+      "ci_hi": 0.14960633784522098,
+      "p_boot_gated_worse": 0.0557,
+      "utts_gated_better": 172,
+      "utts_gated_worse": 147,
+      "utts_tie": 81
+    }
+  ],
+  "gate": {
+    "per_level": [
+      {
+        "snr": -10,
+        "mean": 0.3453828894548475,
+        "sd_between_utts": 0.010988056127480243,
+        "p5": 0.32786790023194085,
+        "p25": 0.3374548899499994,
+        "median": 0.34549329485212055,
+        "p75": 0.3535047306039488,
+        "p95": 0.363856088820269,
+        "median_within_utt_sd": 0.05435560457408428
+      },
+      {
+        "snr": -5,
+        "mean": 0.3584151233160348,
+        "sd_between_utts": 0.011797600901731223,
+        "p5": 0.33991426457996327,
+        "p25": 0.3498409484757398,
+        "median": 0.3584730280485347,
+        "p75": 0.3669174708116674,
+        "p95": 0.37780816585219806,
+        "median_within_utt_sd": 0.051771024242043495
+      },
+      {
+        "snr": 0,
+        "mean": 0.3917415812332875,
+        "sd_between_utts": 0.013922972818858311,
+        "p5": 0.36896719340036604,
+        "p25": 0.38259058168283094,
+        "median": 0.3916072857774391,
+        "p75": 0.4007773330232084,
+        "p95": 0.41486411456966776,
+        "median_within_utt_sd": 0.05802709050476551
+      },
+      {
+        "snr": 5,
+        "mean": 0.4431822156034898,
+        "sd_between_utts": 0.016364861518161338,
+        "p5": 0.4174217760416741,
+        "p25": 0.4320920534527319,
+        "median": 0.44155606224847843,
+        "p75": 0.45402801489395767,
+        "p95": 0.4716422330857709,
+        "median_within_utt_sd": 0.07673655450344086
+      },
+      {
+        "snr": 10,
+        "mean": 0.4897167820038202,
+        "sd_between_utts": 0.0181850679667036,
+        "p5": 0.4615386374098352,
+        "p25": 0.47634475782652075,
+        "median": 0.4888568263614472,
+        "p75": 0.5029102202526707,
+        "p95": 0.5189220937247762,
+        "median_within_utt_sd": 0.08880197256803513
+      },
+      {
+        "snr": 15,
+        "mean": 0.5229932319743034,
+        "sd_between_utts": 0.019550467150216,
+        "p5": 0.49050464098798,
+        "p25": 0.509670648522779,
+        "median": 0.5225899296422158,
+        "p75": 0.5363715277777779,
+        "p95": 0.5548146128358675,
+        "median_within_utt_sd": 0.09119212254881859
+      },
+      {
+        "snr": 20,
+        "mean": 0.5390098294864342,
+        "sd_between_utts": 0.01980299273755721,
+        "p5": 0.5068275306338356,
+        "p25": 0.526382930294361,
+        "median": 0.5388948652479384,
+        "p75": 0.5525409172963094,
+        "p95": 0.5711809175093094,
+        "median_within_utt_sd": 0.09447317197918892
+      },
+      {
+        "snr": 999999,
+        "mean": 0.5390803462052177,
+        "sd_between_utts": 0.019670213086558332,
+        "p5": 0.5090173630214953,
+        "p25": 0.5250257851054756,
+        "median": 0.5390837486083802,
+        "p75": 0.5527259040205973,
+        "p95": 0.5708140353437599,
+        "median_within_utt_sd": 0.12276344373822212
+      }
+    ],
+    "per_utt_spearman": {
+      "median": 0.9761904761904763,
+      "frac_positive": 1.0,
+      "frac_rho_1": 0.46,
+      "min": 0.9285714285714287
+    },
+    "frac_strictly_monotone": 0.46,
+    "adjacent": [
+      {
+        "lo": -10,
+        "hi": -5,
+        "paired_frac_hi_gt_lo": 1.0,
+        "auc_unpaired": 0.78794375
+      },
+      {
+        "lo": -5,
+        "hi": 0,
+        "paired_frac_hi_gt_lo": 1.0,
+        "auc_unpaired": 0.96575
+      },
+      {
+        "lo": 0,
+        "hi": 5,
+        "paired_frac_hi_gt_lo": 1.0,
+        "auc_unpaired": 0.99166875
+      },
+      {
+        "lo": 5,
+        "hi": 10,
+        "paired_frac_hi_gt_lo": 1.0,
+        "auc_unpaired": 0.97210625
+      },
+      {
+        "lo": 10,
+        "hi": 15,
+        "paired_frac_hi_gt_lo": 1.0,
+        "auc_unpaired": 0.89153125
+      },
+      {
+        "lo": 15,
+        "hi": 20,
+        "paired_frac_hi_gt_lo": 1.0,
+        "auc_unpaired": 0.71575625
+      },
+      {
+        "lo": 20,
+        "hi": 999999,
+        "paired_frac_hi_gt_lo": 0.46,
+        "auc_unpaired": 0.49718125
+      }
+    ],
+    "auc_clean_vs_minus10": 1.0,
+    "eta2_level": 0.9535365814005815,
+    "pooled_spearman": 0.946613250011939
+  },
+  "traces": {
+    "ROHAN4600_2664": {
+      "-10": {
+        "n": 116,
+        "mean": 0.36000543049183387,
+        "sd": 0.055365719236792496,
+        "min": 0.23905718326568604,
+        "max": 0.45768114924430847
+      },
+      "-5": {
+        "n": 116,
+        "mean": 0.3664740491016158,
+        "sd": 0.051351183118412067,
+        "min": 0.24954912066459656,
+        "max": 0.45830073952674866
+      },
+      "0": {
+        "n": 116,
+        "mean": 0.3823080312075286,
+        "sd": 0.041562453253475795,
+        "min": 0.26401060819625854,
+        "max": 0.4605167806148529
+      },
+      "5": {
+        "n": 116,
+        "mean": 0.42400445866173714,
+        "sd": 0.06169451843497255,
+        "min": 0.29131993651390076,
+        "max": 0.6478742361068726
+      },
+      "10": {
+        "n": 116,
+        "mean": 0.4648322033984908,
+        "sd": 0.08599314406463589,
+        "min": 0.345903217792511,
+        "max": 0.7146192789077759
+      },
+      "15": {
+        "n": 116,
+        "mean": 0.4894963438654768,
+        "sd": 0.091383459350597,
+        "min": 0.3487687408924103,
+        "max": 0.7406531572341919
+      },
+      "20": {
+        "n": 116,
+        "mean": 0.5045439970904383,
+        "sd": 0.09395570338341383,
+        "min": 0.3577212691307068,
+        "max": 0.7292681336402893
+      },
+      "999999": {
+        "n": 116,
+        "mean": 0.5229390276403263,
+        "sd": 0.127295164263313,
+        "min": 0.3272162675857544,
+        "max": 0.760182797908783
+      }
+    },
+    "ROHAN4600_2549": {
+      "-10": {
+        "n": 135,
+        "mean": 0.350848921140035,
+        "sd": 0.05838906498903431,
+        "min": 0.24420422315597534,
+        "max": 0.4436910152435303
+      },
+      "-5": {
+        "n": 135,
+        "mean": 0.367923034341247,
+        "sd": 0.051994624059968665,
+        "min": 0.2720285654067993,
+        "max": 0.5216258764266968
+      },
+      "0": {
+        "n": 135,
+        "mean": 0.40539826022254094,
+        "sd": 0.06587638539556843,
+        "min": 0.2796373665332794,
+        "max": 0.6685669422149658
+      },
+      "5": {
+        "n": 135,
+        "mean": 0.45441237334851864,
+        "sd": 0.07859450869575278,
+        "min": 0.28281402587890625,
+        "max": 0.7473818063735962
+      },
+      "10": {
+        "n": 135,
+        "mean": 0.5053442676862081,
+        "sd": 0.0835443386048749,
+        "min": 0.3421902358531952,
+        "max": 0.7580704689025879
+      },
+      "15": {
+        "n": 135,
+        "mean": 0.5364976715158534,
+        "sd": 0.08559697576192289,
+        "min": 0.3743489682674408,
+        "max": 0.7609476447105408
+      },
+      "20": {
+        "n": 135,
+        "mean": 0.5534711491178583,
+        "sd": 0.08757143749815446,
+        "min": 0.4134990870952606,
+        "max": 0.7636932134628296
+      },
+      "999999": {
+        "n": 135,
+        "mean": 0.54801694088512,
+        "sd": 0.1201702075188048,
+        "min": 0.338965505361557,
+        "max": 0.7812034487724304
+      }
+    },
+    "ROHAN4600_4174": {
+      "-10": {
+        "n": 147,
+        "mean": 0.33681770703014063,
+        "sd": 0.053670960565612186,
+        "min": 0.24615244567394257,
+        "max": 0.44471144676208496
+      },
+      "-5": {
+        "n": 147,
+        "mean": 0.3511042830084457,
+        "sd": 0.05069809808163477,
+        "min": 0.26260557770729065,
+        "max": 0.45884791016578674
+      },
+      "0": {
+        "n": 147,
+        "mean": 0.3991818111770007,
+        "sd": 0.055964901438996656,
+        "min": 0.31264328956604004,
+        "max": 0.5941761136054993
+      },
+      "5": {
+        "n": 147,
+        "mean": 0.4600157091001264,
+        "sd": 0.07313790415940652,
+        "min": 0.3557407557964325,
+        "max": 0.7248930931091309
+      },
+      "10": {
+        "n": 147,
+        "mean": 0.5145964946876578,
+        "sd": 0.08172668042639984,
+        "min": 0.36928731203079224,
+        "max": 0.7454637885093689
+      },
+      "15": {
+        "n": 147,
+        "mean": 0.5442104921454475,
+        "sd": 0.08724596429969046,
+        "min": 0.38464775681495667,
+        "max": 0.7517239451408386
+      },
+      "20": {
+        "n": 147,
+        "mean": 0.5617628328654231,
+        "sd": 0.08818539856711927,
+        "min": 0.3829088509082794,
+        "max": 0.7554508447647095
+      },
+      "999999": {
+        "n": 147,
+        "mean": 0.56286542877859,
+        "sd": 0.11055244738156048,
+        "min": 0.3570992648601532,
+        "max": 0.7678482532501221
+      }
+    },
+    "ROHAN4600_4519": {
+      "-10": {
+        "n": 154,
+        "mean": 0.34114541732645653,
+        "sd": 0.056235116734412574,
+        "min": 0.23985381424427032,
+        "max": 0.4416864514350891
+      },
+      "-5": {
+        "n": 154,
+        "mean": 0.34812333734778617,
+        "sd": 0.05706897354203778,
+        "min": 0.25255322456359863,
+        "max": 0.4953595697879791
+      },
+      "0": {
+        "n": 154,
+        "mean": 0.37387544981070925,
+        "sd": 0.04755949498803265,
+        "min": 0.2825700044631958,
+        "max": 0.5605624914169312
+      },
+      "5": {
+        "n": 154,
+        "mean": 0.4382729747078635,
+        "sd": 0.06832470863729305,
+        "min": 0.32903411984443665,
+        "max": 0.6959061622619629
+      },
+      "10": {
+        "n": 154,
+        "mean": 0.5050718764980118,
+        "sd": 0.08860191951279199,
+        "min": 0.3681018352508545,
+        "max": 0.7472694516181946
+      },
+      "15": {
+        "n": 154,
+        "mean": 0.5397998508694885,
+        "sd": 0.09268225364835439,
+        "min": 0.3794950842857361,
+        "max": 0.7699537873268127
+      },
+      "20": {
+        "n": 154,
+        "mean": 0.5514958421518277,
+        "sd": 0.09780430956220368,
+        "min": 0.3785962760448456,
+        "max": 0.7700321674346924
+      },
+      "999999": {
+        "n": 154,
+        "mean": 0.5526076901655692,
+        "sd": 0.12063083271287527,
+        "min": 0.3448117673397064,
+        "max": 0.7798919081687927
+      }
+    },
+    "ROHAN4600_2086": {
+      "-10": {
+        "n": 168,
+        "mean": 0.36558632437317146,
+        "sd": 0.054658222864675664,
+        "min": 0.24903078377246857,
+        "max": 0.4568203389644623
+      },
+      "-5": {
+        "n": 168,
+        "mean": 0.37870270173464504,
+        "sd": 0.048478248101554614,
+        "min": 0.26944950222969055,
+        "max": 0.5425439476966858
+      },
+      "0": {
+        "n": 168,
+        "mean": 0.4088031326731046,
+        "sd": 0.056454759229884424,
+        "min": 0.26484060287475586,
+        "max": 0.6708293557167053
+      },
+      "5": {
+        "n": 168,
+        "mean": 0.44769893107669695,
+        "sd": 0.08001604426594458,
+        "min": 0.2630576193332672,
+        "max": 0.746365487575531
+      },
+      "10": {
+        "n": 168,
+        "mean": 0.4767273650282905,
+        "sd": 0.09633502942072504,
+        "min": 0.2836063504219055,
+        "max": 0.7639515399932861
+      },
+      "15": {
+        "n": 168,
+        "mean": 0.49602640313761576,
+        "sd": 0.09811051641896766,
+        "min": 0.33707112073898315,
+        "max": 0.7682368159294128
+      },
+      "20": {
+        "n": 168,
+        "mean": 0.5068744240062577,
+        "sd": 0.10165054050128447,
+        "min": 0.3493872284889221,
+        "max": 0.7703036665916443
+      },
+      "999999": {
+        "n": 168,
+        "mean": 0.5100460180214473,
+        "sd": 0.12537947505571545,
+        "min": 0.338710218667984,
+        "max": 0.7854154706001282
+      }
+    },
+    "ROHAN4600_3717": {
+      "-10": {
+        "n": 181,
+        "mean": 0.3499019417644206,
+        "sd": 0.05845185872397388,
+        "min": 0.24371591210365295,
+        "max": 0.48889651894569397
+      },
+      "-5": {
+        "n": 181,
+        "mean": 0.3632150669453552,
+        "sd": 0.05212826987486764,
+        "min": 0.268783837556839,
+        "max": 0.5154562592506409
+      },
+      "0": {
+        "n": 181,
+        "mean": 0.395293817006422,
+        "sd": 0.0585661037329651,
+        "min": 0.29791417717933655,
+        "max": 0.6179912090301514
+      },
+      "5": {
+        "n": 181,
+        "mean": 0.44129710681530654,
+        "sd": 0.07507440321815055,
+        "min": 0.31886690855026245,
+        "max": 0.6787317395210266
+      },
+      "10": {
+        "n": 181,
+        "mean": 0.4852259718910765,
+        "sd": 0.08662529032663173,
+        "min": 0.353205144405365,
+        "max": 0.724152684211731
+      },
+      "15": {
+        "n": 181,
+        "mean": 0.5202453037651863,
+        "sd": 0.09587656329334045,
+        "min": 0.353564590215683,
+        "max": 0.745097815990448
+      },
+      "20": {
+        "n": 181,
+        "mean": 0.5359791423405073,
+        "sd": 0.1025429153981408,
+        "min": 0.3500407040119171,
+        "max": 0.7766193151473999
+      },
+      "999999": {
+        "n": 181,
+        "mean": 0.5337972168435049,
+        "sd": 0.13259186410775203,
+        "min": 0.31609344482421875,
+        "max": 0.7961000204086304
+      }
+    },
+    "ROHAN4600_3506": {
+      "-10": {
+        "n": 205,
+        "mean": 0.34121176280626436,
+        "sd": 0.05207310422009513,
+        "min": 0.24501273036003113,
+        "max": 0.4473167955875397
+      },
+      "-5": {
+        "n": 205,
+        "mean": 0.3551920752699782,
+        "sd": 0.0486943520878898,
+        "min": 0.2605680823326111,
+        "max": 0.5778332948684692
+      },
+      "0": {
+        "n": 205,
+        "mean": 0.3868171332812891,
+        "sd": 0.04594481286026818,
+        "min": 0.3004886209964752,
+        "max": 0.6414191722869873
+      },
+      "5": {
+        "n": 205,
+        "mean": 0.4496317617776917,
+        "sd": 0.07150099402166513,
+        "min": 0.3013339638710022,
+        "max": 0.7038431167602539
+      },
+      "10": {
+        "n": 205,
+        "mean": 0.503773955891772,
+        "sd": 0.08632744374465787,
+        "min": 0.34154343605041504,
+        "max": 0.7312425971031189
+      },
+      "15": {
+        "n": 205,
+        "mean": 0.5362880923399111,
+        "sd": 0.09467742142192288,
+        "min": 0.3489932417869568,
+        "max": 0.7540805339813232
+      },
+      "20": {
+        "n": 205,
+        "mean": 0.5514518445584832,
+        "sd": 0.09323476269766828,
+        "min": 0.38088923692703247,
+        "max": 0.7557264566421509
+      },
+      "999999": {
+        "n": 205,
+        "mean": 0.5426446980092584,
+        "sd": 0.12414002954136236,
+        "min": 0.3473586142063141,
+        "max": 0.7603153586387634
+      }
+    },
+    "ROHAN4600_3191": {
+      "-10": {
+        "n": 245,
+        "mean": 0.3548923380520879,
+        "sd": 0.04829597498349491,
+        "min": 0.22718429565429688,
+        "max": 0.48068806529045105
+      },
+      "-5": {
+        "n": 245,
+        "mean": 0.3678104927345198,
+        "sd": 0.0445093679006212,
+        "min": 0.2686208188533783,
+        "max": 0.49769526720046997
+      },
+      "0": {
+        "n": 245,
+        "mean": 0.40066908902051496,
+        "sd": 0.05239776680171296,
+        "min": 0.30387577414512634,
+        "max": 0.6208189725875854
+      },
+      "5": {
+        "n": 245,
+        "mean": 0.45625492370858484,
+        "sd": 0.08406779428742138,
+        "min": 0.31558918952941895,
+        "max": 0.7426772117614746
+      },
+      "10": {
+        "n": 245,
+        "mean": 0.49848071859807386,
+        "sd": 0.1012766960762102,
+        "min": 0.3365655839443207,
+        "max": 0.751319944858551
+      },
+      "15": {
+        "n": 245,
+        "mean": 0.5285001999261428,
+        "sd": 0.10540741805609441,
+        "min": 0.35934460163116455,
+        "max": 0.7619799375534058
+      },
+      "20": {
+        "n": 245,
+        "mean": 0.54159305460599,
+        "sd": 0.10713814514530771,
+        "min": 0.3609541058540344,
+        "max": 0.7646356225013733
+      },
+      "999999": {
+        "n": 245,
+        "mean": 0.53816979843743,
+        "sd": 0.13243922562271035,
+        "min": 0.33598974347114563,
+        "max": 0.7778831124305725
+      }
+    }
+  }
+}

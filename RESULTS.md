@@ -53,7 +53,10 @@ numbers below are kept as the July record.
 | white 10 dB | 10.79 | **10.70** | 0.489 |
 | white 5 dB | **15.73** | 16.28 | 0.443 |
 
-**Verdict: mechanism confirmed, benefit absent.** The gate re-weights exactly as
+**Verdict: ~~mechanism confirmed, benefit absent~~ utterance-level response
+confirmed (§2.3); per-frame interpretation not validated (§2.4); benefit
+absent.** (Corrected 2026-10-24: "mechanism confirmed" overclaimed under
+CLAUDE.md §5 once the per-frame reading failed in §2.4.) The gate re-weights exactly as
 designed — its audio weight falls monotonically with SNR with no SNR
 supervision (static arm reads 0.5 exactly, the frozen-gate sanity check) — but
 recognition ties at 10 dB (Δ0.09) and static wins clean (+0.39) and 5 dB
@@ -137,7 +140,11 @@ Reference: VSR (video only) 26.36 %.
    fusion MLP (no new information); scaling shrinks noisy features but does
    not remove them; the fusion MLP is the last stage before CTC and the
    decoder, so there is no video-only path around it; and training (babble,
-   −5…20 dB, audio always present) never rewarded relying on video alone.
+   −5…20 dB, ~~audio always present~~) never rewarded relying on video alone.
+   (Corrected 2026-10-24: the inherited train-time `AdaptiveTimeMask` zeroes
+   up to 0.4 s per second of audio before `AddNoise`, so those spans become
+   babble, or silence when the utterance is clean. Audio was present in every
+   utterance, not in every frame.)
    The last point is a hypothesis; a forced-weight eval (pin w_a = 0 at
    −10 dB) would test it.
 
@@ -563,13 +570,36 @@ reproduces the §2.3 clean result bit for bit. Eval logs
    exploit (§2, future work).
    - Static is better by +0.88 pt [+0.33, +1.45] (audio_chunks) and +0.95 pt [+0.35, +1.57] (both_chunks). Both gaps exceed 0.5 pt with CIs excluding 0.
    - The video_chunks (+0.41) and clean (+0.39) gaps are below 0.5 pt and are not called, even though their CIs exclude 0 (CLAUDE.md §8).
-   - The intervals cover test-utterance sampling only. There is one training seed per arm, and neither arm saw chunk-wise corruption in training (babble, one SNR per utterance).
+   - (Annotated 2026-10-24, from the POST HOC interaction block below.) The level gap holds, but a corruption-specific harm beyond the clean offset is not established: net of the +0.39 pt clean gap, the interaction is +0.49 (audio_chunks) and +0.56 (both_chunks), with CIs spanning 0, and +0.02 (video_chunks). See CLAUDE.md §8, the 0.5 pt rule.
+   - The intervals cover test-utterance sampling only. There is one training seed per arm, and ~~neither arm saw chunk-wise corruption in training (babble, one SNR per utterance)~~ neither arm saw *this* corruption (white noise, blur, occlusion) in training. Both did see chunk-wise, per-stream zeroing from the inherited `AdaptiveTimeMask`, plus babble at one SNR per utterance. (Corrected 2026-10-24: the train transforms in `datamodule/transforms.py` apply `AdaptiveTimeMask` to both streams independently.)
 2. **No arm is worse than the better single modality in any condition.**
    - Fusion beats it by 14–20 pt under audio and both-stream corruption.
    - Under video corruption, both arms tie clean ASR (CIs span 0).
 3. **Video chunks cost fusion ~0.5 pt** (static 3.13 → 3.60, gated 3.52 →
    4.00), although they cost VSR 10 pt. **Audio chunks cost fusion
    8.6–9.1 pt** (static 3.13 → 11.69, gated 3.52 → 12.57).
+
+**Is the gated arm worse because of the corruption? (POST HOC, exploratory;
+not pre-registered, not part of any verdict; added 2026-10-24.)** The raw
+twin gaps above include the gated arm's clean offset (+0.39 pt).
+`posthoc_cer_interaction.py` subtracts it per condition:
+I(c) = [gated − static](c) − [gated − static](placebo), in CER pt, with
+CER = Σ edits / Σ ref_len. The paired bootstrap uses B = 10,000 utterance
+resamples from `np.random.default_rng(0)`, with one resample shared by all
+arms and conditions. It reads only the twins' `rows.csv` (n = 400).
+
+| condition | gated − static | interaction I(c) [95 % CI] |
+|---|---:|---|
+| placebo (clean) | +0.39 [+0.09, +0.69] | (reference) |
+| audio_chunks | +0.88 | +0.49 [−0.09, +1.08] |
+| video_chunks | +0.41 | +0.02 [−0.30, +0.33] |
+| both_chunks | +0.95 | +0.56 [−0.08, +1.21] |
+
+- No interaction has a CI excluding 0. The two audio-bearing conditions sit at about 0.5 pt but are not established.
+- The CI covers test-utterance sampling only, not training-seed variance.
+- The clean-gap CI differs from the main table in the second decimal (+0.09 vs +0.10) because the bootstrap seed differs: `rng(0)` here, `BOOTSTRAP_SEED + 1` in `analyze_chunk_sweep.py`.
+- Output: `auto_avsr/exp/chunk_sweep/posthoc_cer_interaction.md`.
+- Command (from `auto_avsr\`, CPU only): `python posthoc_cer_interaction.py --dir exp/chunk_sweep`.
 
 **Scope of claims.**
 
@@ -578,6 +608,7 @@ reproduces the §2.3 clean result bit for bit. Eval logs
 - **Why it failed:** the control failed, and for video so did the consistency criterion. The per-frame weight does change locally where corruption is applied (descriptive readouts 1–5), but the pre-registered test cannot certify that. Per CLAUDE.md §5.2 it is not re-scored with a different rule.
 - **What happens next:** CLAUDE.md requires the test to be repeated unchanged after chunk-wise training augmentation, and this result is that run's pre-augmentation baseline.
 - **Open caveat for the repeat:** the placebo offset comes from mask placement against the clean gate's speech/pause pattern, so it is expected to recur in the repeat regardless of what the gate learns. Whether to amend the rule before that run is an open decision. Nothing has been changed.
+- **The video response is not generalisation to an unseen corruption family** (added 2026-10-24). The train-time `AdaptiveTimeMask(10, 25)` zeroes up to 10 of every 25 video frames before `Normalize`, so blanked video frames are a training analogue of chunk corruption. dV therefore cannot be read as the gate generalising to a new kind of corruption. The eval types (white noise, blur, eval-half occluders) are still disjoint from time masking, so CLAUDE.md §4 holds.
 
 **Divergences from CLAUDE.md §5.2 (all recorded in the plan entry before
 the runs).**
