@@ -33,8 +33,9 @@ original_checkpoints/
 #ignore the venv
 avsr/
 
-#published papers (redistribution); the index stays tracked
+#published papers (redistribution); the index should also be ignored
 papers/*.pdf
+papers/paperlist.xlsx
 
 #local agent and editor state
 whole_claude_code_promt.txt
@@ -48,3 +49,6 @@ vsr_training_error_260702.txt
 evaluation2.txt
 evaluation_results.txt
 06_27_fine_tuning.txt
+
+#ignore random notes
+midterm-plan-2026-11-23.md
