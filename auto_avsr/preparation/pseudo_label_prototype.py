@@ -32,7 +32,9 @@ Usage (PowerShell, from auto_avsr\, venv active):
       --out-dir ..\datasets\pseudo_label_proto\whisper_large_v3_train300
 
 Dependencies (not in the current venv):
-    pip install openai-whisper pyopenjtalk
+    pip install openai-whisper pyopenjtalk-plus
+    (pyopenjtalk-plus has prebuilt Windows wheels and imports as "pyopenjtalk";
+     plain pyopenjtalk is source-only and needs the MSVC C++ build tools)
     (reazonspeech backend: see https://github.com/reazon-research/ReazonSpeech)
 
 Outputs in --out-dir:
@@ -175,9 +177,10 @@ def read_split(root):
             line = line.strip()
             if not line:
                 continue
-            ds, rel, n_frames, _ = line.split(",", 3)
+            ds, rel, n_frames, token_ids = line.split(",", 3)
             utt = os.path.splitext(os.path.basename(rel))[0]
-            rows.append({"dataset": ds, "rel_path": rel, "n_frames": int(n_frames), "utt_id": utt})
+            rows.append({"dataset": ds, "rel_path": rel, "n_frames": int(n_frames),
+                         "utt_id": utt, "token_ids": [int(t) for t in token_ids.split()]})
     return path, rows
 
 
@@ -189,10 +192,14 @@ def load_audio_16k(root, row):
     return wav, np.ascontiguousarray(data.mean(axis=1))
 
 
-def load_reference(root, row):
-    txt = os.path.join(root, row["dataset"], f"{row['dataset']}_text_seg", f"{row['utt_id']}.txt")
-    with open(txt, encoding="utf-8") as f:
-        return f.read().strip()
+def decode_reference(row, id_to_char):
+    """Manual reference = the token ids in the split CSV, i.e. exactly the target
+    the models train on. (normalize_rohan_video.py copies video, wav and the label
+    CSVs into rohan_preprocessed_fixed, but not rohan_text_seg/*.txt.)"""
+    bad = [i for i in row["token_ids"] if i not in id_to_char or id_to_char[i] == "<unk>"]
+    if bad:
+        raise ValueError(f"{row['utt_id']}: reference has unknown/<unk> token ids {bad[:5]}")
+    return "".join(id_to_char[i] for i in row["token_ids"])
 
 
 def git_state(repo_dir):
@@ -247,18 +254,29 @@ def main():
     # N_SLIDE_EXAMPLES of it become the slide examples (chosen before looking).
     print(f"[info] {len(sample)} / {len(rows)} {SPLIT} utterances from {csv_path}")
 
+    units = open(JA_DICT, encoding="utf-8").read().splitlines()
+    hashmap = {u.split()[0]: u.split()[-1] for u in units}
+    id_to_char = {int(i): c for c, i in hashmap.items()}
+
+    # Check every input BEFORE loading the ASR model or creating --out-dir, so a
+    # data problem fails fast and leaves nothing behind.
+    refs = {}
+    for row in sample:
+        wav = os.path.join(root, row["dataset"], os.path.splitext(row["rel_path"])[0] + ".wav")
+        if not os.path.isfile(wav):
+            sys.exit(f"missing audio: {wav}")
+        refs[row["utt_id"]] = decode_reference(row, id_to_char)
+    print(f"[info] inputs OK: {len(sample)} wavs found, references decoded from the split CSV")
+
     asr = WhisperASR(args.whisper_model, args.device) if args.asr == "whisper" \
         else ReazonSpeechASR(args.device)
     print(f"[info] ASR: {asr.info['backend']} {asr.info['model']} on {asr.info['device']}")
-
-    units = open(JA_DICT, encoding="utf-8").read().splitlines()
-    hashmap = {u.split()[0]: u.split()[-1] for u in units}
 
     os.makedirs(os.path.join(out_dir, "labels"))
     results, unknown, csv_rows = [], [], []
     for i, row in enumerate(sample, 1):
         wav, audio = load_audio_16k(root, row)
-        ref = load_reference(root, row)
+        ref = refs[row["utt_id"]]
         hyp_text = asr(audio)
         phonemes, hyp = text_to_katakana(hyp_text, unknown=unknown)
         ed = edit_distance(hyp, ref)
@@ -329,10 +347,15 @@ def main():
         "asr": asr.info,
         "katakana_conversion": {
             "tool": "pyopenjtalk.g2p -> rohan_phonemes.phonemes_to_katakana",
-            "pyopenjtalk_version": pkg_version("pyopenjtalk"),
+            # The fork pyopenjtalk-plus (prebuilt Windows wheels) imports as
+            # "pyopenjtalk" but ships its own dictionary, so record which one ran.
+            "pyopenjtalk_distribution": next(
+                (f"{d} {pkg_version(d)}" for d in ("pyopenjtalk-plus", "pyopenjtalk")
+                 if pkg_version(d) != "unknown"), "unknown"),
             "devoiced_vowels": "upper-case A/I/U/E/O folded to lower case",
             "vocabulary": JA_DICT},
         "filtering": "none (no confidence filtering, no length filtering)",
+        "reference_source": "token ids in the split CSV, decoded with the vocabulary above",
         "reference_labels_used_for": "measurement only, never to generate or filter labels",
         "csv_media_paths": "relative to the source ROHAN root, not this directory",
         "git": git_state(repo_dir),
