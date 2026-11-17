@@ -680,3 +680,35 @@ checkpoint, dataset root, `snr_target` and `noise_filename` actually used.
 5. Audio for ASR/VSR label CSVs etc. identical to the paper's recipe: AdamW,
    peak LR 1e-4, 5-epoch warmup, cosine, wd 0.03, hybrid CTC/attention α=0.1,
    87 katakana IDs, grayscale + Normalize(0.421, 0.165), single GPU.
+
+## 6. Pseudo-label prototype: label quality on ROHAN train (2026-11-16, PRELIMINARY)
+
+Inference only; no model trained on these labels. Measures how close the
+pseudo-labels are to the manual ROHAN transcripts, using a seeded sample of
+**train** utterances, where manual transcripts exist (never val/test or CENSREC).
+Pipeline: 16 kHz audio → openai-whisper `large-v3` (package 20250625; ja,
+beam 5, temperature 0, fp16) → `pyopenjtalk.g2p` (pyopenjtalk-plus
+0.4.1.post10) → `rohan_phonemes.phonemes_to_katakana` → 87-character vocabulary.
+No confidence or length filtering.
+
+| Sample | Corpus CER | 95 % bootstrap CI | Median per-utt CER | Exact match | ≤ 5 % CER |
+|---|---|---|---|---|---|
+| 300 train utts (seed 0) | **6.36 %** | 5.56 – 7.12 % | 5.06 % | 30.7 % | 50.0 % |
+| (smoke) first 100 of the same sample | 6.20 % | — | 4.49 % | 35 % | 59 % |
+
+- Script `auto_avsr/preparation/pseudo_label_prototype.py` at commit `242e85a`
+  (clean tree, logged in `provenance.json`). Outputs:
+  `datasets/pseudo_label_proto/whisper_large_v3_train300/`.
+- The CI resamples utterances (2,000 resamples, seed 0) and covers the
+  utterance sample only.
+- The 300 run reproduces the 100-utterance smoke run exactly: the same first
+  100 utterance IDs and identical pseudo-labels for all 100.
+- No empty labels and no unmapped phonemes. pyopenjtalk-plus warned that
+  ONNX Runtime is not installed, so its "nani/nan" reading prediction was off.
+- The CER combines ASR errors, OpenJTalk kanji misreadings and differences
+  between the corpus aligner's phonemes and OpenJTalk's. The worst utterances
+  show all three (digits read as Japanese numbers vs English in the reference,
+  Latin-letter brand names, 市場 シジョウ vs イチバ, ヲ/イェ vs オ/イエ).
+  No formal error breakdown has been done yet.
+- This is label quality on in-domain ROHAN speech only. It says nothing about
+  label quality on the (still unchosen) unlabelled Japanese AV source.

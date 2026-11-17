@@ -729,6 +729,15 @@ foreach ($snr in 999999, 10, 5) {
         - Part A: the §2.3 converging stretches are pauses. In speech, the weight follows the utterance's noise level, and ρ(w, segmental SNR) flips sign between 0 and 5 dB.
         - Full tables: RESULTS.md §2.4.
       - **Open decision (not acted on):** CLAUDE.md repeats this test unchanged after chunk-wise training augmentation. The placebo offset comes from mask placement, not from the gate, so it is expected to recur. Any amendment, such as making the placebo-corrected measure primary or placing chunks so that edge coverage is uniform, would have to be committed before that repeat.
+- [x] Pseudo-label prototype, 300 ROHAN train utterances (2026-11-16, inference only, preliminary).
+      ```powershell
+      # from auto_avsr\, venv active, $env:PYTHONIOENCODING = "utf-8"
+      python preparation\pseudo_label_prototype.py --asr whisper --limit 300 `
+        --out-dir ..\datasets\pseudo_label_proto\whisper_large_v3_train300
+      ```
+      - Commit `242e85a`, clean tree. Whisper large-v3 → pyopenjtalk-plus → ROHAN phoneme converter.
+      - Corpus CER 6.36 % (95 % CI 5.56–7.12 %), median per-utterance 5.06 %. The first 100 match the smoke run (`smoke_whisper_large_v3_train100`) exactly.
+      - Full numbers: RESULTS.md §6. Not done yet: error breakdown (midterm level 3) and the choice of an unlabelled AV source.
 - [ ] Write up: reproduction table + static-vs-gated comparison
 
 ---
