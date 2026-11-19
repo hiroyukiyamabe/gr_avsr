@@ -681,7 +681,7 @@ checkpoint, dataset root, `snr_target` and `noise_filename` actually used.
    peak LR 1e-4, 5-epoch warmup, cosine, wd 0.03, hybrid CTC/attention α=0.1,
    87 katakana IDs, grayscale + Normalize(0.421, 0.165), single GPU.
 
-## 6. Pseudo-label prototype: label quality on ROHAN train (2026-11-16, PRELIMINARY)
+## 6. Pseudo-label prototype: label quality on ROHAN train (2026-11-16; full split 2026-11-17; PRELIMINARY)
 
 Inference only; no model trained on these labels. Measures how close the
 pseudo-labels are to the manual ROHAN transcripts, using a seeded sample of
@@ -695,6 +695,8 @@ No confidence or length filtering.
 |---|---|---|---|---|---|
 | 300 train utts (seed 0) | **6.36 %** | 5.56 – 7.12 % | 5.06 % | 30.7 % | 50.0 % |
 | (smoke) first 100 of the same sample | 6.20 % | — | 4.49 % | 35 % | 59 % |
+| **All 3,800 train utts** (2026-11-17) | **6.47 %** | 6.25 – 6.69 % | 5.26 % | 30.6 % | 49.0 % |
+| (the 3,500 not in the 300 sample) | 6.48 % | — | — | — | — |
 
 - Script `auto_avsr/preparation/pseudo_label_prototype.py` at commit `242e85a`
   (clean tree, logged in `provenance.json`). Outputs:
@@ -709,6 +711,69 @@ No confidence or length filtering.
   between the corpus aligner's phonemes and OpenJTalk's. The worst utterances
   show all three (digits read as Japanese numbers vs English in the reference,
   Latin-letter brand names, 市場 シジョウ vs イチバ, ヲ/イェ vs オ/イエ).
-  No formal error breakdown has been done yet.
+  ~~No formal error breakdown has been done yet.~~ (Superseded 2026-11-17:
+  see the POST HOC breakdown below.)
 - This is label quality on in-domain ROHAN speech only. It says nothing about
   label quality on the (still unchosen) unlabelled Japanese AV source.
+
+**Full train split (2026-11-17).** Same script, `--limit 0`, commit `cb5e3be`
+(clean tree). Outputs: `datasets/pseudo_label_proto/whisper_large_v3_train3800/`.
+All 300 utterances of the seeded sample get pseudo-labels identical to the 300
+run. With `--limit 0` the script processes the CSV in ID order, so its
+`examples_slide.md` shows ROHAN4600_0001–0005, not a random draw. The slide
+examples stay those of the 300 run.
+
+### 6.1 Error breakdown (POST HOC, descriptive)
+
+The categories were defined **after** looking at the 300-utterance results, so
+this is a description, not a test. Script:
+`auto_avsr/preparation/posthoc_pseudo_label_errors.py` (sha1 `13668f2b…`),
+copied unchanged from the version applied to the 300 run, then applied unchanged
+to the full split. Each mismatched span between pseudo-label and reference
+(difflib alignment) goes to the first category that fits:
+
+1. **Spelling-only:** the two sides agree after mapping same-sound kana
+   (ヂ/ジ, ヅ/ズ, ヲ/オ, ヴ-row/バ-row, イェ/イエ, o-row + ウ/オ, e-row + イ/エ,
+   トユウ/トイウ). These are convention differences, not errors.
+2. **Rare mora:** the reference span contains ァィゥェォヴヂヅヲ or テ/デ + ャュョ.
+   Almost all are invented foreign names (ROHAN is built to cover rare morae).
+   Whisper writes the nearest ordinary spelling (ツィ→チ, グォ→ゴ, テュ→キュ).
+3. **Digits/Latin reading:** a fixed list of 5 utterance IDs from the 300 run
+   (see limitation below).
+4. **Other:** everything else.
+
+Shares of span cost (span cost ≈ edits; it sums slightly above the Levenshtein total):
+
+| Category | 300 sample | Full 3,800 (frozen rules) |
+|---|---|---|
+| 1 Spelling-only | 20.6 % | 16.3 % |
+| 2 Rare mora (names) | 49.1 % | 48.0 % |
+| 3 Digits/Latin | 7.5 % | 0.6 % ⁽ᵃ⁾ |
+| 4 Other | 22.8 % | 35.2 % ⁽ᵃ⁾ |
+| Span cost / Levenshtein edits | 597 / 590 | 7,545 / 7,491 |
+
+⁽ᵃ⁾ Limitation of the frozen rule: category 3 is a hard-coded list of IDs from
+the 300 run, so on the full split it catches only those 5 utterances. The other
+digit and Latin-letter errors fall into 4. For scale (not reassigned): 253 of the
+3,800 utterances have digits or Latin letters in the ASR text, and they hold
+581 of the 7,491 edits (7.8 %). Not all of those edits are reading choices.
+The script also prints a hard-coded "Levenshtein total 590"; that is a cosmetic
+bug, and the real full-split total is 7,491.
+
+**Hand split of category 4, 300 sample only** (one rater, after looking;
+136 span-chars): Whisper picked the wrong homophone kanji, which OpenJTalk then
+read literally (e.g. 仰天→行転, 除夜→女爺) ≈ 41; OpenJTalk misread plausible
+kanji (市場 シジョウ/イチバ, 白 シロ/ハク, 辛 カラ/ツラ, 何百 ナニ — the last
+one is the ONNX "nani" case) ≈ 22; Whisper mishearings ≈ 73, about two-thirds
+of them on invented names. Errors on ordinary words (Whisper plus kanji reading)
+come to roughly 1 pt of the 6.4 % CER. Category 4 of the full split
+(1,643 spans) has not been hand-labelled.
+
+**Reading.** The rare-mora share replicates (49 % → 48 %), so about half of
+the pseudo-label CER on ROHAN comes from invented names with rare morae. ROHAN's
+text design inflates this; it is not a general weakness of the labeller.
+Convention differences are about a sixth to a fifth of the CER. They are
+systematic, so the mapping to the reference convention has to be decided before
+any pseudo-label training. Both points are specific to ROHAN; neither predicts
+label quality on the unlabelled AV source.
+

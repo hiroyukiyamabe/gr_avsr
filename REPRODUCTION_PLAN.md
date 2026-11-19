@@ -738,6 +738,16 @@ foreach ($snr in 999999, 10, 5) {
       - Commit `242e85a`, clean tree. Whisper large-v3 → pyopenjtalk-plus → ROHAN phoneme converter.
       - Corpus CER 6.36 % (95 % CI 5.56–7.12 %), median per-utterance 5.06 %. The first 100 match the smoke run (`smoke_whisper_large_v3_train100`) exactly.
       - Full numbers: RESULTS.md §6. Not done yet: error breakdown (midterm level 3) and the choice of an unlabelled AV source.
+- [x] Pseudo-label prototype, full ROHAN train split (2026-11-17, inference only, preliminary).
+      ```powershell
+      # from auto_avsr\, venv active, $env:PYTHONIOENCODING = "utf-8"
+      python preparation\pseudo_label_prototype.py --asr whisper --limit 0 `
+        --out-dir ..\datasets\pseudo_label_proto\whisper_large_v3_train3800
+      # POST HOC error breakdown (rules frozen from the 300 run):
+      python preparation\posthoc_pseudo_label_errors.py ..\datasets\pseudo_label_proto\whisper_large_v3_train3800\examples.tsv
+      ```
+      - Commit `cb5e3be`, clean tree. Corpus CER 6.47 % (95 % CI 6.25–6.69 %). The 300-sample utterances are identical to the 300 run.
+      - The rare-mora share replicates (48 %). The frozen digits/Latin rule is ID-based and does not generalise. Details: RESULTS.md §6 and §6.1.
 - [ ] Write up: reproduction table + static-vs-gated comparison
 
 ---
